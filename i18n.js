@@ -13,7 +13,7 @@ const translations = {
         aiTitleGenerator: 'AI论文标题生成器',
         iframeGenerator: '网页iframe生成器',
         githubProject: 'GitHub',
-        selectImages: '选择图片（最多20张）',
+        selectImages: '选择图片（最多30张）',
         watermarkText: '文字',
         watermarkDensity: '密度',
         watermarkColor: '颜色',
@@ -90,7 +90,7 @@ const translations = {
         enterFilename: '输入文件名',
         noWatermarkText: '请输入水印文字',
         noValidImages: '请拖入图片文件',
-        maxImagesReached: '最多只能上传20张图片',
+        maxImagesReached: '最多只能上传30张图片',
         someImagesIgnored: '已添加 {0} 张图片，{1} 张因超出限制而忽略',
     },
     'en': {
@@ -105,7 +105,7 @@ const translations = {
         aiTitleGenerator: 'AI Research Title Generator',
         iframeGenerator: 'Webpage Iframe Generator',
         githubProject: 'GitHub',
-        selectImages: 'Select Images (Max 20)',
+        selectImages: 'Select Images (Max 30)',
         watermarkText: 'Text',
         watermarkDensity: 'Density',
         watermarkColor: 'Color',
@@ -182,7 +182,7 @@ const translations = {
         enterFilename: 'Enter filename',
         noWatermarkText: 'Please enter watermark text',
         noValidImages: 'Please drag image files',
-        maxImagesReached: 'Maximum 20 images allowed',
+        maxImagesReached: 'Maximum 30 images allowed',
         someImagesIgnored: 'Added {0} images, {1} ignored due to limit',
     }
 };

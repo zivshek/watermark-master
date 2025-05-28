@@ -291,7 +291,7 @@
               for="imageInput"
               data-i18n="selectImages"
             >
-              选择图片（最多20张）
+              选择图片（最多30张）
             </label>
             <input
               id="imageInput"
@@ -433,24 +433,24 @@
               </div>
             </div>
             <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
-              <label
-                class="block text-gray-700 text-sm font-bold mb-2"
-                for="watermarkSize"
-                data-i18n="watermarkSize"
-              >
-                字号(Px)
-              </label>
-              <div class="relative">
-                <input
-                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
-                  id="watermarkSize"
-                  type="number"
-                  min="10"
-                  max="100"
-                  value="20"
-                  step="1"
-                />
-              </div>
+                <label
+                  class="block text-gray-700 text-sm font-bold mb-2"
+                  for="watermarkSize"
+                  data-i18n="watermarkSize"
+                >
+                  字号(%)
+                </label>
+                <div class="relative">
+                  <input
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
+                    id="watermarkSize"
+                    type="number"
+                    min="1"
+                    max="50"
+                    value="5"
+                    step="1"
+                  />
+                </div>
             </div>
             <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
               <label
@@ -540,7 +540,7 @@
           <div class="bg-white rounded-lg shadow-md p-6">
             <h3 class="text-xl font-bold mb-4" data-i18n="detailedSteps">详细步骤</h3>
             <ol class="list-decimal list-inside space-y-2 text-gray-700">
-              <li data-i18n="step1">选择或粘贴图片（支持最多20张图片同时处理）</li>
+              <li data-i18n="step1">选择或粘贴图片（支持最多30张图片同时处理）</li>
               <li data-i18n="step2">输入想要添加的水印文字</li>
               <li data-i18n="step3">选择水印位置（整体平铺或四个角落之一）</li>
               <li data-i18n="step4">调整水印密度（仅平铺模式）、颜色和大小</li>

@@ -467,7 +467,9 @@ function processImage(file, existingFilenames = {}) {
             const position = watermarkPosition.value;
             const density = position === 'tile' ? parseInt(watermarkDensity.value) : 1;
             const color = watermarkColor.value;
-            const size = parseInt(watermarkSize.value);
+            // Calculate font size as a percentage of the smaller image dimension
+            const smallerDimension = Math.min(canvas.width, canvas.height);
+            const size = Math.round((parseInt(watermarkSize.value) / 100) * smallerDimension);
             const opacity = parseInt(document.getElementById('watermarkOpacity').value) / 100;
 
             if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
@@ -704,7 +706,20 @@ function initializeFileInput() {
     const fileInput = document.getElementById('imageInput');
     const pasteArea = document.getElementById('pasteArea');
     
-    // 移除动态创建文本显示的代码，因为已经在HTML中静态定义了
+    // 添加清除所有图片按钮
+    const clearButton = document.createElement('button');
+    clearButton.className = 'ml-2 text-sm text-red-500 hover:text-red-700';
+    clearButton.textContent = translations[currentLang].clearAll || '清除所有';
+    clearButton.addEventListener('click', () => {
+        uploadedFiles = [];
+        updateFileInput();
+        updateFileNameDisplay();
+        updateImagePreview();
+    });
+    
+    const fileStatusContainer = document.querySelector('.file-status-container');
+    fileStatusContainer.appendChild(clearButton);
+    
     fileInput.addEventListener('change', handleFileSelect);
 }
 
@@ -757,7 +772,7 @@ function updateImagePreview() {
     imagePreviewArea.classList.remove('hidden');
 
     uploadedFiles.forEach((file, index) => {
-        if (index < 20) { // 限制最多显示20个预览
+        if (index < 30) { // 限制最多显示30个预览
             const reader = new FileReader();
             reader.onload = function(e) {
                 const previewWrapper = document.createElement('div');
@@ -791,10 +806,10 @@ function updateImagePreview() {
     });
 
     // 优化提示信息显示
-    if (uploadedFiles.length > 20) {
+    if (uploadedFiles.length > 30) {
         const message = document.createElement('p');
         message.textContent = translations[currentLang].maxImagesMessage || 
-            `只显示前20张图片预览，共${uploadedFiles.length}张图片已上传`;
+            `只显示前30张图片预览，共${uploadedFiles.length}张图片已上传`;
         message.className = 'text-sm text-gray-500 mt-2';
         imagePreviewArea.appendChild(message);
     }
@@ -811,7 +826,7 @@ function resetAll() {
     document.getElementById('watermarkDensity').value = '3';
     document.getElementById('watermarkDensity').disabled = false;
     document.getElementById('watermarkColor').value = '#dedede';
-    document.getElementById('watermarkSize').value = '20';
+    document.getElementById('watermarkSize').value = '5'; // Default to 5% of image size
     updateColorPreview();
     previewContainer.innerHTML = '';
     // 重置时隐藏结果部分
@@ -1029,9 +1044,9 @@ function handleDrop(e) {
     }
 
     // 限制文件数量
-    const remainingSlots = 20 - uploadedFiles.length;
+    const remainingSlots = 30 - uploadedFiles.length;
     if (remainingSlots <= 0) {
-        ToastManager.showWarning(translations[currentLang].maxImagesReached || '最多只能上传20张图片', this);
+        ToastManager.showWarning(translations[currentLang].maxImagesReached || '最多只能上传30张图片', this);
         return;
     }
 
