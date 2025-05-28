@@ -3,6 +3,7 @@ import JSZip from 'https://jspm.dev/jszip';
 import FileSaver from 'https://jspm.dev/file-saver';
 
 const imageInput = document.getElementById('imageInput');
+let lastUploadDirectory = null; // Store the last upload directory path
 const watermarkText = document.getElementById('watermarkText');
 const watermarkDensity = document.getElementById('watermarkDensity');
 const watermarkColor = document.getElementById('watermarkColor');
@@ -154,7 +155,7 @@ async function initialize() {
         const pasteArea = document.getElementById('pasteArea');
         const imageInput = document.getElementById('imageInput');
         
-        // 点击上传
+        // 点击上传文件
         pasteArea.addEventListener('click', () => imageInput.click());
         
         // 粘贴处理
@@ -300,20 +301,26 @@ async function initialize() {
         const reuseWatermarkBtn = document.getElementById('reuseWatermark');
         const previousWatermarkText = document.getElementById('previousWatermarkText');
 
-        // 检查并显示上次使用的水印文字
+        // 检查并显示上次使用的水印设置
         function checkPreviousWatermark() {
-            const lastWatermark = localStorage.getItem('lastWatermark');
-            console.log('检查历史水印:', lastWatermark);
-            if (lastWatermark) {
+            const lastSettings = localStorage.getItem('lastWatermarkSettings');
+            console.log('检查历史水印设置:', lastSettings);
+            if (lastSettings) {
+                const settings = JSON.parse(lastSettings);
                 // 处理长文本，最多显示10个字符
-                const displayText = lastWatermark.length > 10 
-                    ? lastWatermark.substring(0, 10) + '...' 
-                    : lastWatermark;
+                const displayText = settings.text.length > 10 
+                    ? settings.text.substring(0, 10) + '...' 
+                    : settings.text;
                 
                 // 设置显示文本
                 previousWatermarkText.textContent = displayText;
                 // 设置完整文本作为title属性，鼠标悬停时显示
-                previousWatermarkText.title = lastWatermark;
+                previousWatermarkText.title = `${translations[currentLang].text}: ${settings.text}
+${translations[currentLang].position}: ${settings.position}
+${translations[currentLang].density}: ${settings.density}
+${translations[currentLang].color}: ${settings.color}
+${translations[currentLang].size}: ${settings.size}%
+${translations[currentLang].opacity}: ${settings.opacity}%`;
                 
                 // 添加样式
                 previousWatermarkText.className = 'ml-1 truncate max-w-[150px] inline-block align-middle';
@@ -326,22 +333,23 @@ async function initialize() {
             }
         }
 
-        // 保存水印文字到本地存储
-        function saveWatermark(text) {
-            console.log('保存水印文字:', text); // 添加调试日志
-            if (text.trim()) {
-                localStorage.setItem('lastWatermark', text);
-                checkPreviousWatermark();
-            }
-        }
-
         // 点击重用按钮时的处理
         reuseWatermarkBtn.addEventListener('click', () => {
-            const lastWatermark = localStorage.getItem('lastWatermark');
-            console.log('点击重用按钮，获取到的水印文字:', lastWatermark);
-            if (lastWatermark) {
-                watermarkText.value = lastWatermark;
+            const lastSettings = localStorage.getItem('lastWatermarkSettings');
+            console.log('点击重用按钮，获取到的水印设置:', lastSettings);
+            if (lastSettings) {
+                const settings = JSON.parse(lastSettings);
+                watermarkText.value = settings.text;
+                watermarkPosition.value = settings.position;
+                watermarkDensity.value = settings.density;
+                watermarkColor.value = settings.color;
+                watermarkSize.value = settings.size;
+                watermarkOpacity.value = settings.opacity;
+                
+                // 更新相关UI状态
                 adjustTextareaHeight(watermarkText);
+                updateColorPreview();
+                toggleWatermarkDensity();
                 watermarkText.focus();
             }
         });
@@ -389,10 +397,18 @@ async function processImages() {
             return;
         }
 
-        // 保存水印文字
-        console.log('正在保存水印文字:', text);
-        localStorage.setItem('lastWatermark', text);
-        console.log('水印文字已保存到 localStorage');
+        // 保存所有水印设置
+        console.log('正在保存水印设置');
+        const watermarkSettings = {
+            text: text,
+            position: watermarkPosition.value,
+            density: watermarkDensity.value,
+            color: watermarkColor.value,
+            size: watermarkSize.value,
+            opacity: watermarkOpacity.value
+        };
+        localStorage.setItem('lastWatermarkSettings', JSON.stringify(watermarkSettings));
+        console.log('水印设置已保存到 localStorage');
         previousWatermarkText.textContent = text;
         
         // 显示处理中的 loader
@@ -818,6 +834,7 @@ function updateImagePreview() {
 // 添加重置函数
 function resetAll() {
     uploadedFiles = [];
+    lastUploadDirectory = null;
     updateFileInput();
     updateFileNameDisplay();
     updateImagePreview();
@@ -850,6 +867,51 @@ async function downloadAllImages() {
         return;
     }
 
+    // If files were uploaded from a folder, save to that directory
+    if (lastUploadDirectory) {
+        try {
+            // Create a directory picker
+            const dirHandle = await window.showDirectoryPicker({
+                id: 'watermark',
+                startIn: 'downloads',
+                mode: 'readwrite'
+            });
+
+            // Create watermark subfolder
+            const watermarkFolder = await dirHandle.getDirectoryHandle('watermark', { create: true });
+
+            // Save each image individually
+            const savePromises = Array.from(previewContainer.querySelectorAll('.preview-item')).map(async (previewItem) => {
+                const img = previewItem.querySelector('img');
+                const filenameInput = previewItem.querySelector('input[type="text"]');
+                let filename = filenameInput.value.trim();
+                if (!filename.toLowerCase().match(/\.(png|jpe?g)$/)) {
+                    filename += '.png';
+                }
+
+                try {
+                    const response = await fetch(img.src);
+                    const blob = await response.blob();
+                    const fileHandle = await watermarkFolder.getFileHandle(filename, { create: true });
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                } catch (error) {
+                    console.error('Error saving file:', filename, error);
+                    throw error;
+                }
+            });
+
+            await Promise.all(savePromises);
+            alert(translations[currentLang].saveSuccess || '所有图片已保存到选择的文件夹中的watermark子文件夹');
+            return;
+        } catch (error) {
+            console.error('Error saving to directory:', error);
+            // Fall back to zip download if directory saving fails
+        }
+    }
+
+    // Default to zip download if no directory access or saving failed
     const zip = new JSZip();
     const watermarkTextValue = watermarkText.value || 'watermark';
     const timestamp = getFormattedTimestamp();
@@ -1030,16 +1092,34 @@ function handleDragLeave(e) {
     this.classList.remove('drag-over');
 }
 
-function handleDrop(e) {
+async function handleDrop(e) {
     e.preventDefault();
     e.stopPropagation();
     this.classList.remove('drag-over');
 
-    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+    const items = Array.from(e.dataTransfer.items);
+    const newFiles = [];
     
-    if (files.length === 0) {
-        // 如果没有图片文件，显示提示
-        ToastManager.showWarning(translations[currentLang].noValidImages || '请拖入图片文件', this);
+    for (const item of items) {
+        if (item.kind === 'file') {
+            const entry = item.webkitGetAsEntry();
+            if (entry) {
+                if (entry.isDirectory) {
+                    // Store directory name for saving files back
+                    lastUploadDirectory = entry.name;
+                    // Process directory
+                    const files = await getAllFilesFromDirectory(entry);
+                    newFiles.push(...files);
+                } else if (entry.isFile && isImageFile(entry.name)) {
+                    const file = item.getAsFile();
+                    newFiles.push(file);
+                }
+            }
+        }
+    }
+
+    if (newFiles.length === 0) {
+        ToastManager.showWarning(translations[currentLang].noValidImages || '请拖入图片文件或文件夹', this);
         return;
     }
 
@@ -1050,18 +1130,61 @@ function handleDrop(e) {
         return;
     }
 
-    const filesToAdd = files.slice(0, remainingSlots);
+    const filesToAdd = newFiles.slice(0, remainingSlots);
     uploadedFiles = uploadedFiles.concat(filesToAdd);
     
-    if (files.length > remainingSlots) {
-        // 如果有文件被忽略，显示提示
+    if (newFiles.length > remainingSlots) {
         ToastManager.showWarning(
             translations[currentLang].someImagesIgnored || 
-            `已添加 ${filesToAdd.length} 张图片，${files.length - filesToAdd.length} 张因超出限制而忽略`,
+            `已添加 ${filesToAdd.length} 张图片，${newFiles.length - filesToAdd.length} 张因超出限制而忽略`,
             this
         );
     }
 
     updateFileNameDisplay();
     updateImagePreview();
+}
+
+// Helper function to check if a file is an image
+function isImageFile(filename) {
+    return /\.(jpe?g|png)$/i.test(filename);
+}
+
+// Helper function to get all files from a directory
+function getAllFilesFromDirectory(dirEntry) {
+    return new Promise((resolve, reject) => {
+        const files = [];
+        const reader = dirEntry.createReader();
+        
+        function readEntries() {
+            reader.readEntries(async (entries) => {
+                if (entries.length === 0) {
+                    resolve(files);
+                    return;
+                }
+
+                for (const entry of entries) {
+                    if (entry.isFile && isImageFile(entry.name)) {
+                        try {
+                            const file = await getFileFromEntry(entry);
+                            files.push(file);
+                        } catch (error) {
+                            console.error('Error getting file:', error);
+                        }
+                    }
+                }
+
+                readEntries(); // Continue reading if there are more entries
+            }, reject);
+        }
+
+        readEntries();
+    });
+}
+
+// Helper function to get file from FileEntry
+function getFileFromEntry(entry) {
+    return new Promise((resolve, reject) => {
+        entry.file(resolve, reject);
+    });
 }
