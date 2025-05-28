@@ -213,100 +213,32 @@ async function initialize() {
             }
         }
 
-        watermarkTextArea.addEventListener('input', function() {
-            const lines = this.value.split('\n');
-            if (lines.length > 3) {
-                // 如果超过3行，只保留前3行
-                const firstThreeLines = lines.slice(0, 3);
-                this.value = firstThreeLines.join('\n');
-                // 将光标放到第三行末尾
-                this.selectionStart = this.selectionEnd = this.value.length;
-            }
-            adjustTextareaHeight(this);
-        });
-
-        watermarkTextArea.addEventListener('keydown', function(e) {
-            const lines = this.value.split('\n').filter(line => line.trim() !== '');
-            const cursorPosition = this.selectionStart;
-            const textBeforeCursor = this.value.substring(0, cursorPosition);
-            const linesBeforeCursor = textBeforeCursor.split('\n').filter(line => line.trim() !== '');
-            
-            // 如果在第三行末尾或之后按回车，阻止
-            if (e.key === 'Enter' && !e.shiftKey) {
-                if (lines.length >= 3 || linesBeforeCursor.length >= 3) {
-                    e.preventDefault();
-                    showInputWarning(this, translations[currentLang].maxLinesReached);
-                    return;
-                }
-            }
-        });
-
-        // 处理粘贴事件
-        watermarkTextArea.addEventListener('paste', function(e) {
-            e.stopPropagation(); // 阻止事件冒泡，防止触发document级别的粘贴事件处理
-            
-            const pastedText = e.clipboardData.getData('text');
-            const lines = pastedText.split('\n').filter(line => line.length > 0); // 过滤空行
-            const currentText = this.value;
-            const currentLines = currentText ? currentText.split('\n').filter(line => line.length > 0) : []; // 过滤空行
-            
-            // 如果当前已有内容，且光标不在开头，需要考虑换行符
-            const cursorPosition = this.selectionStart;
-            const isAtStart = cursorPosition === 0;
-            const isAtEnd = cursorPosition === currentText.length;
-            
-            let newText;
-            if (currentLines.length + lines.length > 3) {
-                e.preventDefault();
-                // 计算还可以添加多少行
-                const remainingLines = 3 - currentLines.length;
-                if (remainingLines > 0) {
-                    // 只取需要的行数
-                    const allowedLines = lines.slice(0, remainingLines);
-                    
-                    if (isAtStart) {
-                        newText = allowedLines.join('\n') + '\n' + currentText;
-                    } else if (isAtEnd) {
-                        newText = currentText + (currentText ? '\n' : '') + allowedLines.join('\n');
-                    } else {
-                        // 在光标位置插入
-                        newText = currentText.slice(0, cursorPosition) + 
-                                (cursorPosition > 0 ? '\n' : '') + 
-                                allowedLines.join('\n') + 
-                                currentText.slice(cursorPosition);
-                    }
-                    
-                    // 确保总行数不超过3行
-                    const finalLines = newText.split('\n').filter(line => line.length > 0);
-                    if (finalLines.length > 3) {
-                        newText = finalLines.slice(0, 3).join('\n');
-                    }
-                    
-                    this.value = newText;
-                }
-                alert(translations[currentLang].maxLinesReached || 'Maximum 3 lines allowed');
-            }
-            
-            // 在下一个事件循环中调整高度，确保内容已更新
-            setTimeout(() => adjustTextareaHeight(this), 0);
-        });
-
-        // 移除页面加载器
-        const pageLoader = document.getElementById('pageLoader');
-        if (pageLoader) {
-            pageLoader.style.display = 'none';
-        }
-
         // 在 initialize 函数中添加
         const reuseWatermarkBtn = document.getElementById('reuseWatermark');
         const previousWatermarkText = document.getElementById('previousWatermarkText');
 
-        // 检查并显示上次使用的水印设置
-        function checkPreviousWatermark() {
+        // 加载保存的设置
+        function loadSavedSettings() {
             const lastSettings = localStorage.getItem('lastWatermarkSettings');
-            console.log('检查历史水印设置:', lastSettings);
+            console.log('加载历史水印设置:', lastSettings);
             if (lastSettings) {
                 const settings = JSON.parse(lastSettings);
+                
+                // 先设置位置，这会触发密度选项的更新
+                watermarkPosition.value = settings.position;
+                toggleWatermarkDensity();
+                
+                // 然后设置其他值
+                watermarkText.value = settings.text;
+                watermarkDensity.value = settings.density;
+                watermarkColor.value = settings.color;
+                watermarkSize.value = settings.size;
+                watermarkOpacity.value = settings.opacity;
+                
+                // 更新UI状态
+                adjustTextareaHeight(watermarkText);
+                updateColorPreview();
+                
                 // 处理长文本，最多显示10个字符
                 const displayText = settings.text.length > 10 
                     ? settings.text.substring(0, 10) + '...' 
@@ -334,28 +266,10 @@ ${translations[currentLang].opacity}: ${settings.opacity}%`;
         }
 
         // 点击重用按钮时的处理
-        reuseWatermarkBtn.addEventListener('click', () => {
-            const lastSettings = localStorage.getItem('lastWatermarkSettings');
-            console.log('点击重用按钮，获取到的水印设置:', lastSettings);
-            if (lastSettings) {
-                const settings = JSON.parse(lastSettings);
-                watermarkText.value = settings.text;
-                watermarkPosition.value = settings.position;
-                watermarkDensity.value = settings.density;
-                watermarkColor.value = settings.color;
-                watermarkSize.value = settings.size;
-                watermarkOpacity.value = settings.opacity;
-                
-                // 更新相关UI状态
-                adjustTextareaHeight(watermarkText);
-                updateColorPreview();
-                toggleWatermarkDensity();
-                watermarkText.focus();
-            }
-        });
+        reuseWatermarkBtn.addEventListener('click', loadSavedSettings);
 
-        // 初始检查是否有历史记录
-        checkPreviousWatermark();
+        // 初始加载保存的设置
+        loadSavedSettings();
 
         // 初始化 Toast 管理器
         ToastManager.initialize();
@@ -483,7 +397,6 @@ function processImage(file, existingFilenames = {}) {
             const position = watermarkPosition.value;
             const density = position === 'tile' ? parseInt(watermarkDensity.value) : 1;
             const color = watermarkColor.value;
-            // Calculate font size as a percentage of the smaller image dimension
             const smallerDimension = Math.min(canvas.width, canvas.height);
             const size = Math.round((parseInt(watermarkSize.value) / 100) * smallerDimension);
             const opacity = parseInt(document.getElementById('watermarkOpacity').value) / 100;
@@ -500,7 +413,7 @@ function processImage(file, existingFilenames = {}) {
 
             // 将文本分割成多行
             const lines = text.split('\n');
-            const lineHeight = size * 1.2; // 行高为字体大小的1.2倍
+            const lineHeight = size * 1.2;
 
             if (position === 'tile') {
                 // 整体平铺逻辑
@@ -517,14 +430,9 @@ function processImage(file, existingFilenames = {}) {
                         ctx.translate(x, y);
                         ctx.rotate(angle);
                         
-                        // 绘制文本，根据换行符分割
-                        const lines = text.split('\n');
                         if (lines.length === 1) {
-                            // 单行文本直接居中显示
                             ctx.fillText(text, 0, 0);
                         } else {
-                            // 多行文本需要计算行高
-                            const lineHeight = size * 1.2;
                             lines.forEach((line, index) => {
                                 const yOffset = (index - (lines.length - 1) / 2) * lineHeight;
                                 ctx.fillText(line, 0, yOffset);
@@ -535,25 +443,18 @@ function processImage(file, existingFilenames = {}) {
                     }
                 }
             } else if (position === 'center') {
-                // 居中水印
                 const x = canvas.width / 2;
                 const y = canvas.height / 2;
                 
-                // 绘制文本，根据换行符分割
-                const lines = text.split('\n');
                 if (lines.length === 1) {
-                    // 单行文本直接居中显示
                     ctx.fillText(text, x, y);
                 } else {
-                    // 多行文本需要计算行高
-                    const lineHeight = size * 1.2;
                     lines.forEach((line, index) => {
                         const yOffset = (index - (lines.length - 1) / 2) * lineHeight;
                         ctx.fillText(line, x, y + yOffset);
                     });
                 }
             } else {
-                // 角落水印逻辑
                 const padding = 15;
                 let x, y;
 
@@ -584,14 +485,9 @@ function processImage(file, existingFilenames = {}) {
                         break;
                 }
 
-                // 绘制文本，根据换行符分割
-                const lines = text.split('\n');
                 if (lines.length === 1) {
-                    // 单行文本直接显示
                     ctx.fillText(text, x, y);
                 } else {
-                    // 多行文本需要计算行高和位置
-                    const lineHeight = size * 1.2;
                     if (position.startsWith('bottom')) {
                         lines.reverse().forEach((line, index) => {
                             ctx.fillText(line, x, y - index * lineHeight);
@@ -617,6 +513,59 @@ function processImage(file, existingFilenames = {}) {
             });
             previewItem.appendChild(previewImg);
 
+            // 生成唯一的ID前缀
+            const uniqueId = `watermark-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+            // 添加水印调整控件
+            const watermarkControls = document.createElement('div');
+            watermarkControls.className = 'watermark-controls mb-4 space-y-4';
+
+            // 水平间距调整
+            const hSpacingControl = createSliderControl(
+                `${uniqueId}-horizontal-spacing`,
+                translations[currentLang].horizontalSpacing || '水平间距',
+                -200,
+                200,
+                0,
+                (value) => updateWatermarkPosition(canvas, img, previewImg, uniqueId)
+            );
+            watermarkControls.appendChild(hSpacingControl);
+
+            // 垂直间距调整
+            const vSpacingControl = createSliderControl(
+                `${uniqueId}-vertical-spacing`,
+                translations[currentLang].verticalSpacing || '垂直间距',
+                -200,
+                200,
+                0,
+                (value) => updateWatermarkPosition(canvas, img, previewImg, uniqueId)
+            );
+            watermarkControls.appendChild(vSpacingControl);
+
+            // 水平位置调整
+            const hPositionControl = createSliderControl(
+                `${uniqueId}-horizontal-position`,
+                translations[currentLang].horizontalPosition || '水平位置',
+                -300,
+                300,
+                0,
+                (value) => updateWatermarkPosition(canvas, img, previewImg, uniqueId)
+            );
+            watermarkControls.appendChild(hPositionControl);
+
+            // 垂直位置调整
+            const vPositionControl = createSliderControl(
+                `${uniqueId}-vertical-position`,
+                translations[currentLang].verticalPosition || '垂直位置',
+                -300,
+                300,
+                0,
+                (value) => updateWatermarkPosition(canvas, img, previewImg, uniqueId)
+            );
+            watermarkControls.appendChild(vPositionControl);
+
+            previewItem.appendChild(watermarkControls);
+
             // 添加文件名输入区域
             const filenameContainer = document.createElement('div');
             filenameContainer.className = 'mb-4';
@@ -632,15 +581,13 @@ function processImage(file, existingFilenames = {}) {
             filenameInput.spellcheck = false;
             filenameInput.autocomplete = 'off';
             filenameInput.addEventListener('paste', (e) => {
-                e.stopPropagation(); // 阻止事件冒泡，防止触发document级别的粘贴事件处理
+                e.stopPropagation();
             });
             
-            // 在设置文件名时，检查是否有之前保存的文件名
             const imgDataUrl = canvas.toDataURL();
             if (existingFilenames[imgDataUrl]) {
                 filenameInput.value = existingFilenames[imgDataUrl];
             } else {
-                // 使用默认的文件名逻辑
                 const timestamp = getFormattedTimestamp();
                 if (file.name && file.name !== 'image.png') {
                     const originalName = file.name.substring(0, file.name.lastIndexOf('.'));
@@ -662,10 +609,8 @@ function processImage(file, existingFilenames = {}) {
             downloadLink.href = canvas.toDataURL(file.type || 'image/png');
             downloadLink.className = 'download-button';
             downloadLink.textContent = translations[currentLang].downloadImage;
-            // 更新下载链接的文件名，确保有后缀
             downloadLink.addEventListener('click', function(e) {
                 let filename = filenameInput.value;
-                // 如果文件名没有后缀，添加.png后缀
                 if (!filename.match(/\.[^.]+$/)) {
                     filename += '.png';
                 }
@@ -685,6 +630,152 @@ function processImage(file, existingFilenames = {}) {
         img.src = e.target.result;
     }
     reader.readAsDataURL(file);
+}
+
+// 创建滑块控件
+function createSliderControl(id, label, min, max, defaultValue, onChange) {
+    const container = document.createElement('div');
+    container.className = 'slider-control';
+
+    const labelElement = document.createElement('label');
+    labelElement.className = 'block text-gray-700 text-sm font-bold mb-2';
+    labelElement.textContent = label;
+    container.appendChild(labelElement);
+
+    const sliderContainer = document.createElement('div');
+    sliderContainer.className = 'flex items-center space-x-2';
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.id = id;
+    slider.min = min;
+    slider.max = max;
+    slider.value = defaultValue;
+    slider.className = 'flex-1';
+    slider.addEventListener('input', (e) => onChange(parseInt(e.target.value)));
+
+    const valueDisplay = document.createElement('span');
+    valueDisplay.className = 'text-sm text-gray-600 w-12 text-right';
+    valueDisplay.textContent = defaultValue;
+
+    slider.addEventListener('input', (e) => {
+        valueDisplay.textContent = e.target.value;
+    });
+
+    sliderContainer.appendChild(slider);
+    sliderContainer.appendChild(valueDisplay);
+    container.appendChild(sliderContainer);
+
+    return container;
+}
+
+// 更新水印位置
+function updateWatermarkPosition(canvas, originalImg, previewImg, uniqueId) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(originalImg, 0, 0);
+
+    const text = watermarkText.value;
+    const position = watermarkPosition.value;
+    const density = position === 'tile' ? parseInt(watermarkDensity.value) : 1;
+    const color = watermarkColor.value;
+    const smallerDimension = Math.min(canvas.width, canvas.height);
+    const size = Math.round((parseInt(watermarkSize.value) / 100) * smallerDimension);
+    const opacity = parseInt(document.getElementById('watermarkOpacity').value) / 100;
+
+    ctx.fillStyle = `rgba(${parseInt(color.slice(1,3),16)}, ${parseInt(color.slice(3,5),16)}, ${parseInt(color.slice(5,7),16)}, ${opacity})`;
+    ctx.font = `${size}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const lines = text.split('\n');
+    const lineHeight = size * 1.2;
+
+    // 获取当前图片的所有滑块值
+    const hSpacing = parseInt(document.getElementById(`${uniqueId}-horizontal-spacing`).value);
+    const vSpacing = parseInt(document.getElementById(`${uniqueId}-vertical-spacing`).value);
+    const hPosition = parseInt(document.getElementById(`${uniqueId}-horizontal-position`).value);
+    const vPosition = parseInt(document.getElementById(`${uniqueId}-vertical-position`).value);
+
+    if (position === 'tile') {
+        const angle = -Math.PI / 4;
+        const cellWidth = canvas.width / density;
+        const cellHeight = canvas.height / density;
+
+        for (let i = 0; i < density; i++) {
+            for (let j = 0; j < density; j++) {
+                const x = (i + 0.5) * cellWidth + hPosition + (i * hSpacing);
+                const y = (j + 0.5) * cellHeight + vPosition + (j * vSpacing);
+
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                
+                if (lines.length === 1) {
+                    ctx.fillText(text, 0, 0);
+                } else {
+                    lines.forEach((line, index) => {
+                        const yOffset = (index - (lines.length - 1) / 2) * lineHeight;
+                        ctx.fillText(line, 0, yOffset);
+                    });
+                }
+                
+                ctx.restore();
+            }
+        }
+    } else {
+        const padding = 15;
+        let x, y;
+
+        switch (position) {
+            case 'bottomRight':
+                x = canvas.width - padding + hPosition;
+                y = canvas.height - padding + vPosition;
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'bottom';
+                break;
+            case 'bottomLeft':
+                x = padding + hPosition;
+                y = canvas.height - padding + vPosition;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'bottom';
+                break;
+            case 'topRight':
+                x = canvas.width - padding + hPosition;
+                y = padding + vPosition;
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'top';
+                break;
+            case 'topLeft':
+                x = padding + hPosition;
+                y = padding + vPosition;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                break;
+            case 'center':
+                x = canvas.width / 2 + hPosition;
+                y = canvas.height / 2 + vPosition;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                break;
+        }
+
+        if (lines.length === 1) {
+            ctx.fillText(text, x, y);
+        } else {
+            if (position.startsWith('bottom')) {
+                lines.reverse().forEach((line, index) => {
+                    ctx.fillText(line, x, y - index * (lineHeight + vSpacing));
+                });
+            } else {
+                lines.forEach((line, index) => {
+                    ctx.fillText(line, x, y + index * (lineHeight + vSpacing));
+                });
+            }
+        }
+    }
+
+    previewImg.src = canvas.toDataURL();
 }
 
 // 添加这个函数
@@ -862,56 +953,14 @@ function updateFileInput() {
 }
 
 async function downloadAllImages() {
+    console.log('Download all images triggered');
+    
     if (previewContainer.children.length === 0) {
         alert(translations[currentLang].noImagesToDownload);
         return;
     }
 
-    // If files were uploaded from a folder, save to that directory
-    if (lastUploadDirectory) {
-        try {
-            // Create a directory picker
-            const dirHandle = await window.showDirectoryPicker({
-                id: 'watermark',
-                startIn: 'downloads',
-                mode: 'readwrite'
-            });
-
-            // Create watermark subfolder
-            const watermarkFolder = await dirHandle.getDirectoryHandle('watermark', { create: true });
-
-            // Save each image individually
-            const savePromises = Array.from(previewContainer.querySelectorAll('.preview-item')).map(async (previewItem) => {
-                const img = previewItem.querySelector('img');
-                const filenameInput = previewItem.querySelector('input[type="text"]');
-                let filename = filenameInput.value.trim();
-                if (!filename.toLowerCase().match(/\.(png|jpe?g)$/)) {
-                    filename += '.png';
-                }
-
-                try {
-                    const response = await fetch(img.src);
-                    const blob = await response.blob();
-                    const fileHandle = await watermarkFolder.getFileHandle(filename, { create: true });
-                    const writable = await fileHandle.createWritable();
-                    await writable.write(blob);
-                    await writable.close();
-                } catch (error) {
-                    console.error('Error saving file:', filename, error);
-                    throw error;
-                }
-            });
-
-            await Promise.all(savePromises);
-            alert(translations[currentLang].saveSuccess || '所有图片已保存到选择的文件夹中的watermark子文件夹');
-            return;
-        } catch (error) {
-            console.error('Error saving to directory:', error);
-            // Fall back to zip download if directory saving fails
-        }
-    }
-
-    // Default to zip download if no directory access or saving failed
+    // Create zip file
     const zip = new JSZip();
     const watermarkTextValue = watermarkText.value || 'watermark';
     const timestamp = getFormattedTimestamp();
@@ -1097,21 +1146,37 @@ async function handleDrop(e) {
     e.stopPropagation();
     this.classList.remove('drag-over');
 
+    console.log('Drop event triggered');
+    console.log('DataTransfer items:', e.dataTransfer.items);
+
     const items = Array.from(e.dataTransfer.items);
     const newFiles = [];
     
     for (const item of items) {
+        console.log('Processing item:', item);
+        console.log('Item kind:', item.kind);
+        
         if (item.kind === 'file') {
             const entry = item.webkitGetAsEntry();
+            console.log('File entry:', entry);
+            
             if (entry) {
                 if (entry.isDirectory) {
-                    // Store directory name for saving files back
-                    lastUploadDirectory = entry.name;
+                    console.log('Directory entry found:', entry);
+                    console.log('Directory name:', entry.name);
+                    console.log('Directory fullPath:', entry.fullPath);
+                    
+                    // Store directory entry for later use
+                    lastUploadDirectory = entry;
+                    console.log('Stored directory entry:', lastUploadDirectory);
+                    
                     // Process directory
                     const files = await getAllFilesFromDirectory(entry);
+                    console.log('Files from directory:', files);
                     newFiles.push(...files);
                 } else if (entry.isFile && isImageFile(entry.name)) {
                     const file = item.getAsFile();
+                    console.log('Image file found:', file);
                     newFiles.push(file);
                 }
             }
