@@ -1,6 +1,7 @@
 import { translations, setLanguage, updateURL, currentLang } from './i18n.js';
 import JSZip from 'https://jspm.dev/jszip';
 import FileSaver from 'https://jspm.dev/file-saver';
+import VideoProcessor from './videoProcessor.js';
 
 const imageInput = document.getElementById('imageInput');
 let lastUploadDirectory = null; // Store the last upload directory path
@@ -22,6 +23,10 @@ let uploadedFiles = []; // 用于存储已上传的文件
 const downloadAllButton = document.getElementById('downloadAllButton');
 const resultSection = document.getElementById('resultSection');
 const watermarkPosition = document.getElementById('watermarkPosition');
+
+// Add video quality and format elements
+const videoQuality = document.getElementById('videoQuality');
+const videoFormat = document.getElementById('videoFormat');
 
 // 添加 Toast 管理器
 const ToastManager = {
@@ -273,6 +278,74 @@ ${translations[currentLang].opacity}: ${settings.opacity}%`;
 
         // 初始化 Toast 管理器
         ToastManager.initialize();
+
+        // 在文件开头添加样式
+        const style = document.createElement('style');
+        style.textContent = `
+            #previewContainer {
+                position: relative;
+                left: 0;
+                right: 0;
+                width: 100vw !important;
+                max-width: 100vw !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2rem;
+                box-sizing: border-box;
+                background: none;
+            }
+            .preview-item {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+            }
+            .watermark-controls {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+            .slider-control {
+                grid-column: span 1;
+            }
+            .slider-control label {
+                font-size: 0.875rem;
+                margin-bottom: 0.25rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .slider-control input[type="range"] {
+                width: 100%;
+            }
+            @media (min-width: 1800px) {
+                #previewContainer {
+                    grid-template-columns: repeat(5, 1fr);
+                }
+            }
+            @media (min-width: 1400px) and (max-width: 1799px) {
+                #previewContainer {
+                    grid-template-columns: repeat(4, 1fr);
+                }
+            }
+            @media (max-width: 1280px) {
+                #previewContainer {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+            }
+            @media (max-width: 1024px) {
+                #previewContainer {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
+            @media (max-width: 640px) {
+                #previewContainer {
+                    grid-template-columns: 1fr;
+                }
+            }
+        `;
+        document.head.appendChild(style);
     } catch (error) {
         console.error('Initialization error:', error);
         // 确保即使出错也移除loading状态
@@ -296,87 +369,147 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // 定义处理图片的主函数
-async function processImages() {
+async function processFiles() {
+    if (uploadedFiles.length === 0) {
+        ToastManager.showWarning(translations[currentLang].noFilesSelected);
+        return;
+    }
+
+    processButton.disabled = true;
+    processingLoader.style.display = 'flex';
+    resultSection.classList.remove('hidden');
+    previewContainer.innerHTML = '';
+
+    // Progress bar elements
+    const batchProgressContainer = document.getElementById('batchProgressContainer');
+    const batchProgressBar = document.getElementById('batchProgressBar');
+    const batchProgressText = document.getElementById('batchProgressText');
+    const videoProgressContainer = document.getElementById('videoProgressContainer');
+    const videoProgressBar = document.getElementById('videoProgressBar');
+    const videoProgressText = document.getElementById('videoProgressText');
+    batchProgressContainer.style.display = 'block';
+    videoProgressContainer.style.display = 'none';
+    batchProgressBar.style.width = '0%';
+    batchProgressText.textContent = '';
+    videoProgressBar.style.width = '0%';
+    videoProgressText.textContent = '';
+
+    const zip = new JSZip();
+    const processedFiles = [];
+    const existingFilenames = {};
+
     try {
-        // 先检查水印文本
-        const text = watermarkText.value;
-        if (!text.trim()) {
-            watermarkText.classList.add('input-warning');
-            ToastManager.showWarning(translations[currentLang].noWatermarkText || '请输入水印文字', watermarkText);
-            
-            // 3秒后移除警告状态
-            setTimeout(() => {
-                watermarkText.classList.remove('input-warning');
-            }, 3000);
-            return;
-        }
-
-        // 保存所有水印设置
-        console.log('正在保存水印设置');
-        const watermarkSettings = {
-            text: text,
-            position: watermarkPosition.value,
-            density: watermarkDensity.value,
-            color: watermarkColor.value,
-            size: watermarkSize.value,
-            opacity: watermarkOpacity.value
-        };
-        localStorage.setItem('lastWatermarkSettings', JSON.stringify(watermarkSettings));
-        console.log('水印设置已保存到 localStorage');
-        previousWatermarkText.textContent = text;
-        
-        // 显示处理中的 loader
-        processingLoader.style.display = 'block';
-        processButton.disabled = true;
-
-        // 处理图片
-        if (uploadedFiles.length === 0) {
-            const pasteArea = document.getElementById('pasteArea');
-            pasteArea.classList.add('upload-warning');
-            ToastManager.showWarning(translations[currentLang].noImagesSelected, pasteArea);
-            
-            // 3秒后移除警告状态
-            setTimeout(() => {
-                pasteArea.classList.remove('upload-warning');
-            }, 3000);
-            return;
-        }
-
-        // 保存现有的文件名
-        const existingFilenames = {};
-        document.querySelectorAll('.preview-item').forEach(item => {
-            const img = item.querySelector('img');
-            const input = item.querySelector('input[type="text"]');
-            if (img && input) {
-                existingFilenames[img.src] = input.value;
+        for (let i = 0; i < uploadedFiles.length; i++) {
+            const file = uploadedFiles[i];
+            // Update batch progress
+            batchProgressText.textContent = `Processing file ${i + 1} of ${uploadedFiles.length}`;
+            batchProgressBar.style.width = `${Math.floor(((i) / uploadedFiles.length) * 100)}%`;
+            if (isVideoFile(file.name)) {
+                // Show per-video progress
+                videoProgressContainer.style.display = 'block';
+                videoProgressBar.style.width = '0%';
+                videoProgressText.textContent = 'Processing video: 0%';
+                const processedVideo = await processVideo(file, existingFilenames, (percent) => {
+                    videoProgressBar.style.width = percent + '%';
+                    videoProgressText.textContent = `Processing video: ${percent}%`;
+                });
+                processedFiles.push(processedVideo);
+                zip.file(processedVideo.name, processedVideo);
+                videoProgressBar.style.width = '100%';
+                videoProgressText.textContent = 'Processing video: 100%';
+                videoProgressContainer.style.display = 'none';
+            } else {
+                videoProgressContainer.style.display = 'none';
+                const processedImage = await processImage(file, existingFilenames);
+                processedFiles.push(processedImage);
+                zip.file(processedImage.name, processedImage);
             }
-        });
+            batchProgressBar.style.width = `${Math.floor(((i + 1) / uploadedFiles.length) * 100)}%`;
+        }
+        batchProgressText.textContent = 'All files processed';
+        batchProgressBar.style.width = '100%';
+        setTimeout(() => { batchProgressContainer.style.display = 'none'; }, 1000);
 
-        // 清空预览容器
-        previewContainer.innerHTML = '';
+        // Create previews
+        for (const file of processedFiles) {
+            const preview = document.createElement('div');
+            preview.className = 'preview-item';
+            
+            if (isVideoFile(file.name)) {
+                const video = document.createElement('video');
+                video.src = URL.createObjectURL(file);
+                video.controls = true;
+                video.className = 'preview-video';
+                preview.appendChild(video);
+            } else {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.className = 'preview-image';
+                preview.appendChild(img);
+            }
 
-        // 处理每张图片
-        for (const file of uploadedFiles) {
-            await processImage(file, existingFilenames);
+            const downloadBtn = document.createElement('button');
+            downloadBtn.className = 'download-btn';
+            downloadBtn.textContent = translations[currentLang].download;
+            downloadBtn.onclick = () => downloadFile(file);
+            preview.appendChild(downloadBtn);
+
+            previewContainer.appendChild(preview);
         }
 
-        // 显示结果区域
-        resultSection.classList.remove('hidden');
-        
-        // 滚动到结果区域
-        resultSection.scrollIntoView({ behavior: 'smooth' });
+        // Save settings
+        saveSettings();
     } catch (error) {
-        console.error('处理图片时出错:', error);
-        ToastManager.showError('处理图片时出错，请重试');
+        console.error('Processing error:', error);
+        ToastManager.showError(translations[currentLang].processingError);
     } finally {
-        // 隐藏处理中的 loader
-        processingLoader.style.display = 'none';
         processButton.disabled = false;
+        processingLoader.style.display = 'none';
     }
 }
 
+async function processVideo(file, existingFilenames = {}, onProgress) {
+    const videoProcessor = new VideoProcessor();
+    const options = {
+        watermarkText: watermarkText.value,
+        position: watermarkPosition.value,
+        color: watermarkColor.value,
+        size: parseInt(watermarkSize.value),
+        opacity: parseInt(watermarkOpacity.value),
+        quality: videoQuality.value,
+        format: videoFormat.value,
+        onProgress,
+        density: parseInt(watermarkDensity.value)
+    };
+
+    const processedBlob = await videoProcessor.processVideo(file, options);
+    const newFilename = generateUniqueFilename(file.name, existingFilenames);
+    return new File([processedBlob], newFilename, { type: processedBlob.type });
+}
+
+function isVideoFile(filename) {
+    const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv'];
+    return videoExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+}
+
+function generateUniqueFilename(originalName, existingFilenames) {
+    const timestamp = getFormattedTimestamp();
+    const extension = originalName.split('.').pop();
+    const baseName = originalName.substring(0, originalName.lastIndexOf('.'));
+    let newName = `${baseName}_watermarked_${timestamp}.${extension}`;
+    
+    let counter = 1;
+    while (existingFilenames[newName]) {
+        newName = `${baseName}_watermarked_${timestamp}_${counter}.${extension}`;
+        counter++;
+    }
+    
+    existingFilenames[newName] = true;
+    return newName;
+}
+
 // 添加事件监听
-processButton.addEventListener('click', processImages);
+processButton.addEventListener('click', processFiles);
 
 function processImage(file, existingFilenames = {}) {
     console.log('Processing image:', file.name);
@@ -418,8 +551,16 @@ function processImage(file, existingFilenames = {}) {
             if (position === 'tile') {
                 // 整体平铺逻辑
                 const angle = -Math.PI / 4;
-                const cellWidth = canvas.width / density;
-                const cellHeight = canvas.height / density;
+                // Calculate the max width and height of the watermark text (for multi-line)
+                let maxTextWidth = 0;
+                lines.forEach(line => {
+                    const w = ctx.measureText(line).width;
+                    if (w > maxTextWidth) maxTextWidth = w;
+                });
+                const textBlockHeight = lineHeight * lines.length;
+                // Add some padding
+                const cellWidth = Math.max(canvas.width / density, maxTextWidth + 20);
+                const cellHeight = Math.max(canvas.height / density, textBlockHeight + 20);
 
                 for (let i = 0; i < density; i++) {
                     for (let j = 0; j < density; j++) {
@@ -429,7 +570,6 @@ function processImage(file, existingFilenames = {}) {
                         ctx.save();
                         ctx.translate(x, y);
                         ctx.rotate(angle);
-                        
                         if (lines.length === 1) {
                             ctx.fillText(text, 0, 0);
                         } else {
@@ -438,7 +578,6 @@ function processImage(file, existingFilenames = {}) {
                                 ctx.fillText(line, 0, yOffset);
                             });
                         }
-                        
                         ctx.restore();
                     }
                 }
@@ -502,7 +641,10 @@ function processImage(file, existingFilenames = {}) {
 
             // 创建预览项
             const previewItem = document.createElement('div');
-            previewItem.className = 'preview-item bg-white p-4 rounded-lg shadow';
+            previewItem.className = 'preview-item bg-white p-4 rounded-lg shadow w-full';
+
+            // 修改预览容器的类
+            previewContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full max-w-[3000px] mx-auto';
 
             const previewImg = document.createElement('img');
             previewImg.src = canvas.toDataURL();
@@ -518,7 +660,7 @@ function processImage(file, existingFilenames = {}) {
 
             // 添加水印调整控件
             const watermarkControls = document.createElement('div');
-            watermarkControls.className = 'watermark-controls mb-4 space-y-4';
+            watermarkControls.className = 'watermark-controls grid grid-cols-2 gap-3 mb-4';
 
             // 水平间距调整
             const hSpacingControl = createSliderControl(
@@ -699,8 +841,16 @@ function updateWatermarkPosition(canvas, originalImg, previewImg, uniqueId) {
 
     if (position === 'tile') {
         const angle = -Math.PI / 4;
-        const cellWidth = canvas.width / density;
-        const cellHeight = canvas.height / density;
+        // Calculate the max width and height of the watermark text (for multi-line)
+        let maxTextWidth = 0;
+        lines.forEach(line => {
+            const w = ctx.measureText(line).width;
+            if (w > maxTextWidth) maxTextWidth = w;
+        });
+        const textBlockHeight = lineHeight * lines.length;
+        // Add some padding
+        const cellWidth = Math.max(canvas.width / density, maxTextWidth + 20);
+        const cellHeight = Math.max(canvas.height / density, textBlockHeight + 20);
 
         for (let i = 0; i < density; i++) {
             for (let j = 0; j < density; j++) {
@@ -710,7 +860,6 @@ function updateWatermarkPosition(canvas, originalImg, previewImg, uniqueId) {
                 ctx.save();
                 ctx.translate(x, y);
                 ctx.rotate(angle);
-                
                 if (lines.length === 1) {
                     ctx.fillText(text, 0, 0);
                 } else {
@@ -719,7 +868,6 @@ function updateWatermarkPosition(canvas, originalImg, previewImg, uniqueId) {
                         ctx.fillText(line, 0, yOffset);
                     });
                 }
-                
                 ctx.restore();
             }
         }
@@ -832,30 +980,24 @@ function initializeFileInput() {
 
 // 修改 handleFileSelect 函数
 function handleFileSelect(e) {
-    const files = e.target.files;
-    uploadedFiles = uploadedFiles.concat(Array.from(files)); // 使用 concat 来添加新文件
-    updateFileNameDisplay();
-    updateImagePreview();
+    const files = Array.from(e.target.files);
+    handleFiles(files);
 }
 
-// 修改 handlePaste 函数
 function handlePaste(e) {
-    e.preventDefault();
-    e.stopPropagation();
+    const items = e.clipboardData?.items;
+    if (!items) return;
 
-    const items = e.clipboardData.items;
-    const newFiles = [];
-
-    for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
-            const blob = items[i].getAsFile();
-            newFiles.push(blob);
+    const files = [];
+    for (const item of items) {
+        if (item.kind === 'file') {
+            const file = item.getAsFile();
+            if (file && (isImageFile(file.name) || isVideoFile(file.name))) {
+                files.push(file);
+            }
         }
     }
-
-    uploadedFiles = uploadedFiles.concat(newFiles); // 使用 concat 来添加新文件
-    updateFileNameDisplay();
-    updateImagePreview();
+    handleFiles(files);
 }
 
 // 修改 updateFileNameDisplay 函数
@@ -1144,68 +1286,50 @@ function handleDragLeave(e) {
 async function handleDrop(e) {
     e.preventDefault();
     e.stopPropagation();
-    this.classList.remove('drag-over');
-
-    console.log('Drop event triggered');
-    console.log('DataTransfer items:', e.dataTransfer.items);
-
-    const items = Array.from(e.dataTransfer.items);
-    const newFiles = [];
+    
+    const items = e.dataTransfer.items;
+    const files = [];
     
     for (const item of items) {
-        console.log('Processing item:', item);
-        console.log('Item kind:', item.kind);
-        
         if (item.kind === 'file') {
-            const entry = item.webkitGetAsEntry();
-            console.log('File entry:', entry);
-            
-            if (entry) {
-                if (entry.isDirectory) {
-                    console.log('Directory entry found:', entry);
-                    console.log('Directory name:', entry.name);
-                    console.log('Directory fullPath:', entry.fullPath);
-                    
-                    // Store directory entry for later use
-                    lastUploadDirectory = entry;
-                    console.log('Stored directory entry:', lastUploadDirectory);
-                    
-                    // Process directory
-                    const files = await getAllFilesFromDirectory(entry);
-                    console.log('Files from directory:', files);
-                    newFiles.push(...files);
-                } else if (entry.isFile && isImageFile(entry.name)) {
-                    const file = item.getAsFile();
-                    console.log('Image file found:', file);
-                    newFiles.push(file);
+            // Handle both modern and legacy browsers
+            if (item.webkitGetAsEntry) {
+                const entry = item.webkitGetAsEntry();
+                if (entry) {
+                    if (entry.isDirectory) {
+                        try {
+                            const dirFiles = await getAllFilesFromDirectory(entry);
+                            files.push(...dirFiles);
+                        } catch (error) {
+                            console.error('Error reading directory:', error);
+                            // Fallback to getting the file directly
+                            const file = item.getAsFile();
+                            if (file) files.push(file);
+                        }
+                    } else {
+                        const file = item.getAsFile();
+                        if (file) files.push(file);
+                    }
                 }
+            } else {
+                // Fallback for browsers that don't support webkitGetAsEntry
+                const file = item.getAsFile();
+                if (file) files.push(file);
             }
         }
     }
-
-    if (newFiles.length === 0) {
-        ToastManager.showWarning(translations[currentLang].noValidImages || '请拖入图片文件或文件夹', this);
-        return;
-    }
-
-    // 限制文件数量
-    const remainingSlots = 30 - uploadedFiles.length;
-    if (remainingSlots <= 0) {
-        ToastManager.showWarning(translations[currentLang].maxImagesReached || '最多只能上传30张图片', this);
-        return;
-    }
-
-    const filesToAdd = newFiles.slice(0, remainingSlots);
-    uploadedFiles = uploadedFiles.concat(filesToAdd);
     
-    if (newFiles.length > remainingSlots) {
-        ToastManager.showWarning(
-            translations[currentLang].someImagesIgnored || 
-            `已添加 ${filesToAdd.length} 张图片，${newFiles.length - filesToAdd.length} 张因超出限制而忽略`,
-            this
-        );
+    handleFiles(files);
+}
+
+function handleFiles(files) {
+    const validFiles = files.filter(file => isImageFile(file.name) || isVideoFile(file.name));
+    if (validFiles.length === 0) {
+        ToastManager.showWarning(translations[currentLang].invalidFileType);
+        return;
     }
 
+    uploadedFiles = validFiles;
     updateFileNameDisplay();
     updateImagePreview();
 }
@@ -1219,28 +1343,49 @@ function isImageFile(filename) {
 function getAllFilesFromDirectory(dirEntry) {
     return new Promise((resolve, reject) => {
         const files = [];
+        
+        // Check if createReader is available
+        if (!dirEntry.createReader) {
+            reject(new Error('Directory reading not supported'));
+            return;
+        }
+        
         const reader = dirEntry.createReader();
         
         function readEntries() {
             reader.readEntries(async (entries) => {
-                if (entries.length === 0) {
+                if (!entries || entries.length === 0) {
                     resolve(files);
                     return;
                 }
 
                 for (const entry of entries) {
-                    if (entry.isFile && isImageFile(entry.name)) {
+                    if (entry.isFile) {
                         try {
                             const file = await getFileFromEntry(entry);
-                            files.push(file);
+                            if (isImageFile(file.name) || isVideoFile(file.name)) {
+                                files.push(file);
+                            }
                         } catch (error) {
                             console.error('Error getting file:', error);
+                        }
+                    } else if (entry.isDirectory) {
+                        try {
+                            const subDirFiles = await getAllFilesFromDirectory(entry);
+                            files.push(...subDirFiles);
+                        } catch (error) {
+                            console.error('Error reading subdirectory:', error);
                         }
                     }
                 }
 
-                readEntries(); // Continue reading if there are more entries
-            }, reject);
+                // Continue reading if there are more entries
+                readEntries();
+            }, (error) => {
+                console.error('Error reading directory entries:', error);
+                // Resolve with whatever files we've collected so far
+                resolve(files);
+            });
         }
 
         readEntries();
@@ -1250,6 +1395,37 @@ function getAllFilesFromDirectory(dirEntry) {
 // Helper function to get file from FileEntry
 function getFileFromEntry(entry) {
     return new Promise((resolve, reject) => {
+        if (!entry.file) {
+            reject(new Error('File reading not supported'));
+            return;
+        }
         entry.file(resolve, reject);
     });
+}
+
+// Save current watermark settings to localStorage
+function saveSettings() {
+    const settings = {
+        text: watermarkText.value,
+        position: watermarkPosition.value,
+        density: watermarkDensity.value,
+        color: watermarkColor.value,
+        size: watermarkSize.value,
+        opacity: watermarkOpacity.value
+    };
+    localStorage.setItem('lastWatermarkSettings', JSON.stringify(settings));
+}
+
+// Download a File object (image or video)
+function downloadFile(file) {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name || 'download';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 100);
 }
