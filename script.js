@@ -28,6 +28,9 @@ const watermarkPosition = document.getElementById('watermarkPosition');
 const videoQuality = document.getElementById('videoQuality');
 const videoFormat = document.getElementById('videoFormat');
 
+// Declare processedFiles in a higher scope so downloadAllImages can access it
+let processedFiles = [];
+
 // 添加 Toast 管理器
 const ToastManager = {
     container: null,
@@ -377,6 +380,7 @@ async function processFiles() {
 
     processButton.disabled = true;
     processingLoader.style.display = 'flex';
+    resetButton.disabled = true;
     resultSection.classList.remove('hidden');
     previewContainer.innerHTML = '';
 
@@ -395,76 +399,226 @@ async function processFiles() {
     videoProgressText.textContent = '';
 
     const zip = new JSZip();
-    const processedFiles = [];
     const existingFilenames = {};
+    let filesToProcess = [...uploadedFiles]; // Create a copy initially
 
     try {
-        for (let i = 0; i < uploadedFiles.length; i++) {
-            const file = uploadedFiles[i];
+        filesToProcess = filesToProcess.filter(file => file instanceof File && file.name && typeof file.size === 'number');
+        if (filesToProcess.length === 0) {
+             ToastManager.showWarning(translations[currentLang].noValidFilesToProcess || 'No valid files selected for processing.');
+             processButton.disabled = false;
+             processingLoader.style.display = 'none';
+             resetButton.disabled = false;
+             resultSection.classList.add('hidden'); // Hide results if no files processed
+             return;
+        }
+
+        for (let i = 0; i < filesToProcess.length; i++) {
+            const file = filesToProcess[i];
+
+            // *** Add a very early and explicit null/undefined check ***
+            if (file === undefined || file === null) {
+                console.warn('Skipping undefined or null entry in file list at index', i);
+                continue; // Skip this iteration if the entry is undefined or null
+            }
+
+            // Explicitly check if file is a File object before proceeding
+            if (!(file instanceof File)) {
+                console.warn('Skipping invalid entry in file list:', file);
+                continue; // Skip if the entry is not a valid File object
+            }
+
+            // Add an extra safeguard: ensure file object has a name property
+            if (!file.name) {
+                console.warn('Skipping file with no name property:', file);
+                continue;
+            }
+
+            // *** Double-check file validity immediately before accessing name ***
+            if (!file || typeof file.name !== 'string') {
+                console.error('Unexpected invalid file object encountered:', file);
+                continue; // Skip this iteration if file or file.name is invalid
+            }
+
             // Update batch progress
-            batchProgressText.textContent = `Processing file ${i + 1} of ${uploadedFiles.length}`;
-            batchProgressBar.style.width = `${Math.floor(((i) / uploadedFiles.length) * 100)}%`;
-            if (isVideoFile(file.name)) {
-                // Show per-video progress
-                videoProgressContainer.style.display = 'block';
-                videoProgressBar.style.width = '0%';
-                videoProgressText.textContent = 'Processing video: 0%';
-                const processedVideo = await processVideo(file, existingFilenames, (percent) => {
-                    videoProgressBar.style.width = percent + '%';
-                    videoProgressText.textContent = `Processing video: ${percent}%`;
-                });
-                processedFiles.push(processedVideo);
-                zip.file(processedVideo.name, processedVideo);
-                videoProgressBar.style.width = '100%';
-                videoProgressText.textContent = 'Processing video: 100%';
-                videoProgressContainer.style.display = 'none';
-            } else {
-                videoProgressContainer.style.display = 'none';
-                const processedImage = await processImage(file, existingFilenames);
-                processedFiles.push(processedImage);
-                zip.file(processedImage.name, processedImage);
+            batchProgressText.textContent = `Processing file ${i + 1} of ${filesToProcess.length}`;
+            batchProgressBar.style.width = `${Math.floor(((i) / filesToProcess.length) * 100)}%`;
+
+            let processedFile = null; // Initialize to null
+
+            try {
+                if (isVideoFile(file.name)) {
+                    // Show per-video progress
+                    videoProgressContainer.style.display = 'block';
+                    videoProgressBar.style.width = '0%';
+                    videoProgressText.textContent = 'Processing video: 0%';
+                    processedFile = await processVideo(file, existingFilenames, (percent) => {
+                        videoProgressBar.style.width = percent + '%';
+                        videoProgressText.textContent = `Processing video: ${percent}%`;
+                    });
+                    videoProgressBar.style.width = '100%';
+                    videoProgressText.textContent = 'Processing video: 100%';
+                    videoProgressContainer.style.display = 'none';
+                } else {
+                    videoProgressContainer.style.display = 'none';
+                    // Await the refactored processImage which now returns a File object
+                    processedFile = await processImage(file, existingFilenames);
+                }
+            } catch (processingError) {
+                console.error(`Error processing file ${file.name}:`, processingError);
+                ToastManager.showError(`Failed to process ${file.name}: ${processingError.message}`);
+                // processedFile remains null, and we will skip adding it below
             }
-            batchProgressBar.style.width = `${Math.floor(((i + 1) / uploadedFiles.length) * 100)}%`;
+
+            // *** Add the processed file to the list and zip ONLY IF it was successfully processed ***
+            if (processedFile instanceof File) { // Explicitly check if it's a File object
+                // *** Log the file object right before adding to zip ***
+                console.log('Adding file to zip:', processedFile);
+                // *** Add an extra check for the name property ***
+                if (typeof processedFile.name !== 'string' || !processedFile.name) {
+                    console.error('Processed file has invalid name property, skipping zip.file:', processedFile);
+                    continue; // Skip adding to zip if name is invalid
+                }
+                processedFiles.push(processedFile);
+                // Use the name from the processedFile object
+                zip.file(processedFile.name, processedFile);
+            } else {
+                 console.warn('Processing of file resulted in no valid output:', file.name || 'Unknown file');
+            }
+
+            batchProgressBar.style.width = `${Math.floor(((i + 1) / filesToProcess.length) * 100)}%`;
         }
-        batchProgressText.textContent = 'All files processed';
+
+        // Final batch progress update - use filesToProcess length
+        batchProgressText.textContent = `Processed ${filesToProcess.length} files` || 'All files processed';
         batchProgressBar.style.width = '100%';
-        setTimeout(() => { batchProgressContainer.style.display = 'none'; }, 1000);
+        // Keep progress bars visible briefly after completion
+        setTimeout(() => {
+             batchProgressContainer.style.display = 'none';
+             videoProgressContainer.style.display = 'none'; // Hide video bar too
+        }, 1500);
 
-        // Create previews
+        // *** Create previews for ALL processed files (images and videos) ***
+        previewContainer.innerHTML = ''; // Clear existing previews
+        resultSection.classList.remove('hidden'); // Ensure results section is visible
+
         for (const file of processedFiles) {
-            const preview = document.createElement('div');
-            preview.className = 'preview-item';
-            
+            const previewItem = document.createElement('div');
+            previewItem.className = 'preview-item bg-white p-4 rounded-lg shadow w-full';
+
             if (isVideoFile(file.name)) {
-                const video = document.createElement('video');
-                video.src = URL.createObjectURL(file);
-                video.controls = true;
-                video.className = 'preview-video';
-                preview.appendChild(video);
-            } else {
-                const img = document.createElement('img');
-                img.src = URL.createObjectURL(file);
-                img.className = 'preview-image';
-                preview.appendChild(img);
+                 const video = document.createElement('video');
+                 video.src = URL.createObjectURL(file);
+                 video.controls = true;
+                 video.className = 'preview-video w-full h-auto mb-4';
+                 previewItem.appendChild(video);
+             } else {
+                const previewImg = document.createElement('img');
+                previewImg.src = URL.createObjectURL(file);
+                previewImg.className = 'preview-image w-full h-auto mb-4 cursor-pointer';
+                previewImg.addEventListener('click', function() {
+                    modalImage.src = this.src;
+                    imageModal.classList.remove('hidden');
+                });
+                previewItem.appendChild(previewImg);
+
+                // --- Re-add Image Specific Controls (Simplified for now) ---
+                // If you need per-image sliders back, this section will need more complex logic
+                // to associate controls with the correct preview item and update the *displayed* canvas for that preview.
+                // For now, we'll omit per-image controls here to focus on fixing the core processing flow.
+                // --- End Image Specific Controls ---
             }
 
-            const downloadBtn = document.createElement('button');
-            downloadBtn.className = 'download-btn';
-            downloadBtn.textContent = translations[currentLang].download;
-            downloadBtn.onclick = () => downloadFile(file);
-            preview.appendChild(downloadBtn);
+            // Add filename input (using the generated name)
+            const filenameContainer = document.createElement('div');
+            filenameContainer.className = 'mb-4';
 
-            previewContainer.appendChild(preview);
+            const filenameLabel = document.createElement('label');
+            filenameLabel.className = 'block text-gray-700 text-sm font-bold mb-2';
+            filenameLabel.textContent = translations[currentLang].filename || 'Filename';
+            filenameContainer.appendChild(filenameLabel);
+
+            const filenameInput = document.createElement('input');
+            filenameInput.type = 'text';
+            filenameInput.className = 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline';
+            filenameInput.spellcheck = false;
+            filenameInput.autocomplete = 'off';
+            filenameInput.value = file.name; // Use the processed file's name
+            // Add event listener to update the file name in the processedFiles array if the user changes it
+            filenameInput.addEventListener('input', (e) => {
+                 // Find the corresponding file in processedFiles and update its name
+                 const fileIndex = processedFiles.findIndex(f => f === file); // Find by reference
+                 if (fileIndex > -1) {
+                     // Create a new File object with the updated name (File objects are immutable)
+                     processedFiles[fileIndex] = new File([file], e.target.value, { type: file.type });
+                 }
+            });
+
+            filenameContainer.appendChild(filenameInput);
+            previewItem.appendChild(filenameContainer);
+
+            const buttonGroup = document.createElement('div');
+            buttonGroup.className = 'button-group';
+
+            // Individual download button (using the processed File object)
+            const downloadLink = document.createElement('a');
+            downloadLink.href = URL.createObjectURL(file);
+            downloadLink.className = 'download-button';
+            downloadLink.textContent = translations[currentLang].download || 'Download';
+            downloadLink.download = file.name; // Use the processed file's name for download
+            // Clean up the object URL after download (optional, good practice for many files)
+            downloadLink.addEventListener('click', () => {
+                // Delay revokeObjectURL slightly to ensure download starts
+                setTimeout(() => URL.revokeObjectURL(downloadLink.href), 100);
+            });
+            buttonGroup.appendChild(downloadLink);
+
+             // Add Copy to Clipboard button for images (not supported for videos directly as an image)
+             if (!isVideoFile(file.name)) {
+                 const copyButton = document.createElement('button');
+                 copyButton.textContent = translations[currentLang].copyToClipboard || 'Copy';
+                 copyButton.className = 'copy-button';
+                 // Need a way to get the canvas from the processed image file for copying
+                 // This might require re-drawing the image onto a temporary canvas for copying
+                 copyButton.addEventListener('click', async () => {
+                     try {
+                         const imgElement = previewItem.querySelector('.preview-image');
+                         if (imgElement) {
+                             const tempCanvas = document.createElement('canvas');
+                             tempCanvas.width = imgElement.naturalWidth;
+                             tempCanvas.height = imgElement.naturalHeight;
+                             const tempCtx = tempCanvas.getContext('2d');
+                             tempCtx.drawImage(imgElement, 0, 0);
+                             await copyImageToClipboard(tempCanvas); // Reuse the existing copy function
+                         }
+                     } catch (error) {
+                         console.error('Failed to copy image from preview:', error);
+                         ToastManager.showError(translations[currentLang].copyFailed || 'Failed to copy image.');
+                     }
+                 });
+                 buttonGroup.appendChild(copyButton);
+             }
+
+            previewItem.appendChild(buttonGroup);
+            previewContainer.appendChild(previewItem);
         }
 
-        // Save settings
+        // Scroll to results section
+        resultSection.scrollIntoView({ behavior: 'smooth' });
+
+        // Save settings after successful processing
         saveSettings();
+
     } catch (error) {
         console.error('Processing error:', error);
-        ToastManager.showError(translations[currentLang].processingError);
+        ToastManager.showError(translations[currentLang].processingError || 'An error occurred during processing.');
     } finally {
         processButton.disabled = false;
         processingLoader.style.display = 'none';
+        resetButton.disabled = false;
+        // Ensure progress bars are hidden
+        batchProgressContainer.style.display = 'none';
+        videoProgressContainer.style.display = 'none';
     }
 }
 
@@ -493,17 +647,24 @@ function isVideoFile(filename) {
 }
 
 function generateUniqueFilename(originalName, existingFilenames) {
+    // Ensure originalName is a string before splitting
+    if (typeof originalName !== 'string') {
+        console.warn('generateUniqueFilename received non-string name:', originalName);
+        originalName = 'unknown_file';
+    }
     const timestamp = getFormattedTimestamp();
-    const extension = originalName.split('.').pop();
-    const baseName = originalName.substring(0, originalName.lastIndexOf('.'));
-    let newName = `${baseName}_watermarked_${timestamp}.${extension}`;
-    
+    // Add a check to handle cases where originalName might not have an extension
+    const parts = originalName.split('.');
+    const extension = parts.length > 1 ? parts.pop() : '';
+    const baseName = parts.join('.');
+    let newName = `${baseName}_watermarked_${timestamp}${extension ? '.' + extension : ''}`;
+
     let counter = 1;
     while (existingFilenames[newName]) {
-        newName = `${baseName}_watermarked_${timestamp}_${counter}.${extension}`;
+        newName = `${baseName}_watermarked_${timestamp}_${counter}${extension ? '.' + extension : ''}`;
         counter++;
     }
-    
+
     existingFilenames[newName] = true;
     return newName;
 }
@@ -511,267 +672,166 @@ function generateUniqueFilename(originalName, existingFilenames) {
 // 添加事件监听
 processButton.addEventListener('click', processFiles);
 
+// Modify processImage to return a Promise that resolves with the processed File object
 function processImage(file, existingFilenames = {}) {
     console.log('Processing image:', file.name);
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
 
-            // 绘制原图
-            ctx.drawImage(img, 0, 0);
+                // Draw original image
+                ctx.drawImage(img, 0, 0);
 
-            // 添加水印
-            const text = watermarkText.value;
-            const position = watermarkPosition.value;
-            const density = position === 'tile' ? parseInt(watermarkDensity.value) : 1;
-            const color = watermarkColor.value;
-            const smallerDimension = Math.min(canvas.width, canvas.height);
-            const size = Math.round((parseInt(watermarkSize.value) / 100) * smallerDimension);
-            const opacity = parseInt(document.getElementById('watermarkOpacity').value) / 100;
+                // Add watermark (using existing logic)
+                const text = watermarkText.value;
+                const position = watermarkPosition.value;
+                const density = position === 'tile' ? parseInt(watermarkDensity.value) : 1;
+                const color = watermarkColor.value;
+                const smallerDimension = Math.min(canvas.width, canvas.height);
+                const size = Math.round((parseInt(watermarkSize.value) / 100) * smallerDimension);
+                const opacity = parseInt(document.getElementById('watermarkOpacity').value) / 100;
 
-            if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
-                alert(translations[currentLang].invalidColorValue);
-                return;
-            }
+                if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
+                     // Reject the promise if color is invalid
+                    reject(new Error(translations[currentLang].invalidColorValue || 'Invalid color value.'));
+                    return; // Stop processing
+                }
 
-            ctx.fillStyle = `rgba(${parseInt(color.slice(1,3),16)}, ${parseInt(color.slice(3,5),16)}, ${parseInt(color.slice(5,7),16)}, ${opacity})`;
-            ctx.font = `${size}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
+                ctx.fillStyle = `rgba(${parseInt(color.slice(1,3),16)}, ${parseInt(color.slice(3,5),16)}, ${parseInt(color.slice(5,7),16)}, ${opacity})`;
+                ctx.font = `${size}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
 
-            // 将文本分割成多行
-            const lines = text.split('\n');
-            const lineHeight = size * 1.2;
+                const lines = text.split('\n');
+                const lineHeight = size * 1.2;
 
-            if (position === 'tile') {
-                // 整体平铺逻辑
-                const angle = -Math.PI / 4;
-                // Calculate the max width and height of the watermark text (for multi-line)
-                let maxTextWidth = 0;
-                lines.forEach(line => {
-                    const w = ctx.measureText(line).width;
-                    if (w > maxTextWidth) maxTextWidth = w;
-                });
-                const textBlockHeight = lineHeight * lines.length;
-                // Add some padding
-                const cellWidth = Math.max(canvas.width / density, maxTextWidth + 20);
-                const cellHeight = Math.max(canvas.height / density, textBlockHeight + 20);
+                // Get current adjustments (assuming these controls are somehow associated per-image if needed, or global)
+                // For now, let's assume global adjustments for simplicity or pass them in options if per-image adjustments are needed.
+                // If per-image sliders are created *after* this function returns, they won't be available here.
+                // Let's revert image adjustments for now to simplify the function to just return the processed image.
 
-                for (let i = 0; i < density; i++) {
-                    for (let j = 0; j < density; j++) {
-                        const x = (i + 0.5) * cellWidth;
-                        const y = (j + 0.5) * cellHeight;
+                // --- Reverted Image Adjustment Logic --- (Will need to re-add this differently if required)
+                // const hSpacing = parseInt(document.getElementById(`${uniqueId}-horizontal-spacing`).value); // uniqueId is not available here
+                // const vSpacing = parseInt(document.getElementById(`${uniqueId}-vertical-spacing`).value); // uniqueId is not available here
+                // const hPosition = parseInt(document.getElementById(`${uniqueId}-horizontal-position`).value); // uniqueId is not available here
+                // const vPosition = parseInt(document.getElementById(`${uniqueId}-vertical-position`).value); // uniqueId is not available here
+                // --- End Reverted Logic ---
 
-                        ctx.save();
-                        ctx.translate(x, y);
-                        ctx.rotate(angle);
-                        if (lines.length === 1) {
-                            ctx.fillText(text, 0, 0);
-                        } else {
+                // Simplified tiling logic (without per-image adjustments here)
+                if (position === 'tile') {
+                    const angle = -Math.PI / 4;
+                    let maxTextWidth = 0;
+                    lines.forEach(line => {
+                        const w = ctx.measureText(line).width;
+                        if (w > maxTextWidth) maxTextWidth = w;
+                    });
+                    const textBlockHeight = lineHeight * lines.length;
+                    const cellWidth = Math.max(canvas.width / density, maxTextWidth + 20);
+                    const cellHeight = Math.max(canvas.height / density, textBlockHeight + 20);
+
+                    for (let i = 0; i < density; i++) {
+                        for (let j = 0; j < density; j++) {
+                            const x = (i + 0.5) * cellWidth;
+                            const y = (j + 0.5) * cellHeight;
+
+                            ctx.save();
+                            ctx.translate(x, y);
+                            ctx.rotate(angle);
                             lines.forEach((line, index) => {
                                 const yOffset = (index - (lines.length - 1) / 2) * lineHeight;
                                 ctx.fillText(line, 0, yOffset);
                             });
+                            ctx.restore();
                         }
-                        ctx.restore();
                     }
-                }
-            } else if (position === 'center') {
-                const x = canvas.width / 2;
-                const y = canvas.height / 2;
-                
-                if (lines.length === 1) {
-                    ctx.fillText(text, x, y);
                 } else {
-                    lines.forEach((line, index) => {
-                        const yOffset = (index - (lines.length - 1) / 2) * lineHeight;
-                        ctx.fillText(line, x, y + yOffset);
+                    // Simplified positioning logic (without per-image adjustments here)
+                    let x, y;
+                    ctx.textAlign = 'center'; // Default to center alignment for single watermark
+                    ctx.textBaseline = 'middle'; // Default to middle baseline for single watermark
+                    const padding = 15;
+
+                    switch (position) {
+                        case 'center':
+                            x = canvas.width / 2;
+                            y = canvas.height / 2;
+                            break;
+                        case 'bottomRight':
+                            x = canvas.width - padding;
+                            y = canvas.height - padding;
+                            ctx.textAlign = 'right';
+                            ctx.textBaseline = 'bottom';
+                            break;
+                        case 'bottomLeft':
+                            x = padding;
+                            y = canvas.height - padding;
+                            ctx.textAlign = 'left';
+                            ctx.textBaseline = 'bottom';
+                            break;
+                        case 'topRight':
+                            x = canvas.width - padding;
+                            y = padding;
+                            ctx.textAlign = 'right';
+                            ctx.textBaseline = 'top';
+                            break;
+                        case 'topLeft':
+                            x = padding;
+                            y = padding;
+                            ctx.textAlign = 'left';
+                            ctx.textBaseline = 'top';
+                            break;
+                         default: // Should not happen with select element
+                            x = canvas.width / 2; // Default to center
+                            y = canvas.height / 2;
+                            break;
+                    }
+                     lines.forEach((line, index) => {
+                        // Adjust Y offset based on baseline and line number
+                        let currentY = y;
+                         if (lines.length > 1) {
+                            const totalTextBlockHeight = lineHeight * lines.length;
+                            const firstLineY = y - (totalTextBlockHeight / 2) + (lineHeight / 2);
+                            currentY = firstLineY + index * lineHeight;
+                         }
+                         // For bottom baseline, need to adjust Y differently for multiline
+                         if (position.startsWith('bottom')) {
+                             const totalTextBlockHeight = lineHeight * lines.length;
+                             const firstLineY = y + (totalTextBlockHeight / 2) - (lineHeight / 2);
+                             currentY = firstLineY - index * lineHeight; // Draw upwards from the base Y
+                         }
+
+                        ctx.fillText(line, x, currentY);
                     });
                 }
-            } else {
-                const padding = 15;
-                let x, y;
 
-                switch (position) {
-                    case 'bottomRight':
-                        x = canvas.width - padding;
-                        y = canvas.height - padding;
-                        ctx.textAlign = 'right';
-                        ctx.textBaseline = 'bottom';
-                        break;
-                    case 'bottomLeft':
-                        x = padding;
-                        y = canvas.height - padding;
-                        ctx.textAlign = 'left';
-                        ctx.textBaseline = 'bottom';
-                        break;
-                    case 'topRight':
-                        x = canvas.width - padding;
-                        y = padding;
-                        ctx.textAlign = 'right';
-                        ctx.textBaseline = 'top';
-                        break;
-                    case 'topLeft':
-                        x = padding;
-                        y = padding;
-                        ctx.textAlign = 'left';
-                        ctx.textBaseline = 'top';
-                        break;
-                }
+                // Generate filename
+                const newFilename = generateUniqueFilename(file.name, existingFilenames);
 
-                if (lines.length === 1) {
-                    ctx.fillText(text, x, y);
-                } else {
-                    if (position.startsWith('bottom')) {
-                        lines.reverse().forEach((line, index) => {
-                            ctx.fillText(line, x, y - index * lineHeight);
-                        });
+                // Convert canvas to Blob and resolve the promise with a File object
+                canvas.toBlob(function(blob) {
+                    if (blob) {
+                        resolve(new File([blob], newFilename, { type: blob.type }));
                     } else {
-                        lines.forEach((line, index) => {
-                            ctx.fillText(line, x, y + index * lineHeight);
-                        });
+                        reject(new Error('Failed to create Blob from canvas.'));
                     }
-                }
-            }
-
-            // 创建预览项
-            const previewItem = document.createElement('div');
-            previewItem.className = 'preview-item bg-white p-4 rounded-lg shadow w-full';
-
-            // 修改预览容器的类
-            previewContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full max-w-[3000px] mx-auto';
-
-            const previewImg = document.createElement('img');
-            previewImg.src = canvas.toDataURL();
-            previewImg.className = 'preview-image w-full h-auto mb-4 cursor-pointer';
-            previewImg.addEventListener('click', function() {
-                modalImage.src = this.src;
-                imageModal.classList.remove('hidden');
-            });
-            previewItem.appendChild(previewImg);
-
-            // 生成唯一的ID前缀
-            const uniqueId = `watermark-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-            // 添加水印调整控件
-            const watermarkControls = document.createElement('div');
-            watermarkControls.className = 'watermark-controls grid grid-cols-2 gap-3 mb-4';
-
-            // 水平间距调整
-            const hSpacingControl = createSliderControl(
-                `${uniqueId}-horizontal-spacing`,
-                translations[currentLang].horizontalSpacing || '水平间距',
-                -200,
-                200,
-                0,
-                (value) => updateWatermarkPosition(canvas, img, previewImg, uniqueId)
-            );
-            watermarkControls.appendChild(hSpacingControl);
-
-            // 垂直间距调整
-            const vSpacingControl = createSliderControl(
-                `${uniqueId}-vertical-spacing`,
-                translations[currentLang].verticalSpacing || '垂直间距',
-                -200,
-                200,
-                0,
-                (value) => updateWatermarkPosition(canvas, img, previewImg, uniqueId)
-            );
-            watermarkControls.appendChild(vSpacingControl);
-
-            // 水平位置调整
-            const hPositionControl = createSliderControl(
-                `${uniqueId}-horizontal-position`,
-                translations[currentLang].horizontalPosition || '水平位置',
-                -300,
-                300,
-                0,
-                (value) => updateWatermarkPosition(canvas, img, previewImg, uniqueId)
-            );
-            watermarkControls.appendChild(hPositionControl);
-
-            // 垂直位置调整
-            const vPositionControl = createSliderControl(
-                `${uniqueId}-vertical-position`,
-                translations[currentLang].verticalPosition || '垂直位置',
-                -300,
-                300,
-                0,
-                (value) => updateWatermarkPosition(canvas, img, previewImg, uniqueId)
-            );
-            watermarkControls.appendChild(vPositionControl);
-
-            previewItem.appendChild(watermarkControls);
-
-            // 添加文件名输入区域
-            const filenameContainer = document.createElement('div');
-            filenameContainer.className = 'mb-4';
-            
-            const filenameLabel = document.createElement('label');
-            filenameLabel.className = 'block text-gray-700 text-sm font-bold mb-2';
-            filenameLabel.textContent = translations[currentLang].filename || '文件名';
-            filenameContainer.appendChild(filenameLabel);
-
-            const filenameInput = document.createElement('input');
-            filenameInput.type = 'text';
-            filenameInput.className = 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline';
-            filenameInput.spellcheck = false;
-            filenameInput.autocomplete = 'off';
-            filenameInput.addEventListener('paste', (e) => {
-                e.stopPropagation();
-            });
-            
-            const imgDataUrl = canvas.toDataURL();
-            if (existingFilenames[imgDataUrl]) {
-                filenameInput.value = existingFilenames[imgDataUrl];
-            } else {
-                const timestamp = getFormattedTimestamp();
-                if (file.name && file.name !== 'image.png') {
-                    const originalName = file.name.substring(0, file.name.lastIndexOf('.'));
-                    const extension = file.name.substring(file.name.lastIndexOf('.'));
-                    const watermarkIdentifier = currentLang === 'en' ? '_watermarked_' : '_已加水印_';
-                    filenameInput.value = `${originalName}${watermarkIdentifier}${timestamp}${extension}`;
-                } else {
-                    filenameInput.value = `image_${timestamp}.png`;
-                }
-            }
-            
-            filenameContainer.appendChild(filenameInput);
-            previewItem.appendChild(filenameContainer);
-
-            const buttonGroup = document.createElement('div');
-            buttonGroup.className = 'button-group';
-
-            const downloadLink = document.createElement('a');
-            downloadLink.href = canvas.toDataURL(file.type || 'image/png');
-            downloadLink.className = 'download-button';
-            downloadLink.textContent = translations[currentLang].downloadImage;
-            downloadLink.addEventListener('click', function(e) {
-                let filename = filenameInput.value;
-                if (!filename.match(/\.[^.]+$/)) {
-                    filename += '.png';
-                }
-                this.download = filename;
-            });
-            buttonGroup.appendChild(downloadLink);
-
-            const copyButton = document.createElement('button');
-            copyButton.textContent = translations[currentLang].copyToClipboard;
-            copyButton.className = 'copy-button';
-            copyButton.addEventListener('click', () => copyImageToClipboard(canvas));
-            buttonGroup.appendChild(copyButton);
-
-            previewItem.appendChild(buttonGroup);
-            previewContainer.appendChild(previewItem);
-        }
-        img.src = e.target.result;
-    }
-    reader.readAsDataURL(file);
+                }, file.type || 'image/png'); // Use original file type or default to png
+            };
+            img.onerror = function() {
+                reject(new Error('Failed to load image for processing.'));
+            };
+            img.src = e.target.result; // Start loading the image
+        };
+        reader.onerror = function() {
+            reject(new Error('Failed to read file.'));
+        };
+        reader.readAsDataURL(file); // Start reading the file
+    });
 }
 
 // 创建滑块控件
@@ -1021,47 +1081,36 @@ function updateImagePreview() {
     imagePreviewArea.classList.remove('hidden');
 
     uploadedFiles.forEach((file, index) => {
-        if (index < 30) { // 限制最多显示30个预览
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const previewWrapper = document.createElement('div');
-                previewWrapper.className = 'relative group';
-                
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.className = 'w-16 h-16 object-cover rounded';
-                img.loading = 'lazy'; // 添加延迟加载
-                img.width = 64;  // 添加明确的尺寸
-                img.height = 64;
-                previewWrapper.appendChild(img);
-                
-                // 添加删除按钮
-                const deleteButton = document.createElement('button');
-                deleteButton.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity';
-                deleteButton.innerHTML = '×';
-                deleteButton.onclick = (e) => {
-                    e.stopPropagation();
-                    uploadedFiles.splice(index, 1);
-                    updateFileInput();
-                    updateFileNameDisplay();
-                    updateImagePreview();
-                };
-                previewWrapper.appendChild(deleteButton);
-                
-                imagePreviewArea.appendChild(previewWrapper);
-            }
-            reader.readAsDataURL(file);
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const previewWrapper = document.createElement('div');
+            previewWrapper.className = 'relative group';
+            
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.className = 'w-16 h-16 object-cover rounded';
+            img.loading = 'lazy'; // 添加延迟加载
+            img.width = 64;  // 添加明确的尺寸
+            img.height = 64;
+            previewWrapper.appendChild(img);
+            
+            // 添加删除按钮
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity';
+            deleteButton.innerHTML = '×';
+            deleteButton.onclick = (e) => {
+                e.stopPropagation();
+                uploadedFiles.splice(index, 1);
+                updateFileInput();
+                updateFileNameDisplay();
+                updateImagePreview();
+            };
+            previewWrapper.appendChild(deleteButton);
+            
+            imagePreviewArea.appendChild(previewWrapper);
         }
+        reader.readAsDataURL(file);
     });
-
-    // 优化提示信息显示
-    if (uploadedFiles.length > 30) {
-        const message = document.createElement('p');
-        message.textContent = translations[currentLang].maxImagesMessage || 
-            `只显示前30张图片预览，共${uploadedFiles.length}张图片已上传`;
-        message.className = 'text-sm text-gray-500 mt-2';
-        imagePreviewArea.appendChild(message);
-    }
 }
 
 // 添加重置函数
@@ -1095,58 +1144,35 @@ function updateFileInput() {
 }
 
 async function downloadAllImages() {
-    console.log('Download all images triggered');
-    
-    if (previewContainer.children.length === 0) {
-        alert(translations[currentLang].noImagesToDownload);
+    console.log('Download all files triggered');
+
+    if (processedFiles.length === 0) {
+        alert(translations[currentLang].noFilesToDownload || 'No files to download.');
         return;
     }
 
-    // Create zip file
     const zip = new JSZip();
-    const watermarkTextValue = watermarkText.value || 'watermark';
+    const watermarkTextValue = watermarkText.value || 'watermarked';
     const timestamp = getFormattedTimestamp();
     const zipFilename = `${watermarkTextValue}-${timestamp}.zip`;
 
-    // 收集所有预览项
-    const previewItems = Array.from(previewContainer.querySelectorAll('.preview-item'));
-    
     try {
-        // 等待所有图片添加完成
-        await Promise.all(previewItems.map(async (previewItem) => {
-            const img = previewItem.querySelector('img');
-            const filenameInput = previewItem.querySelector('input[type="text"]');
-            
-            // 确保文件名有后缀
-            let filename = filenameInput.value.trim();
-            if (!filename.toLowerCase().match(/\.(png|jpe?g|gif|webp|bmp)$/)) {
-                filename += '.png';
-            }
-            
-            try {
-                const response = await fetch(img.src);
-                const blob = await response.blob();
-                // 确保blob的type是正确的
-                const imageBlob = new Blob([blob], { type: 'image/png' });
-                zip.file(filename, imageBlob, { binary: true });
-            } catch (error) {
-                console.error('处理图片出错:', error);
-                throw error;
-            }
-        }));
+        for (const file of processedFiles) {
+            // Add each processed File object to the zip
+            zip.file(file.name, file, { binary: true });
+        }
 
-        // 生成并下载 zip 文件
+        // Generate and download zip file
         const content = await zip.generateAsync({
             type: "blob",
             compression: "DEFLATE",
-            compressionOptions: {
-                level: 9
-            }
+            compressionOptions: { level: 9 }
         });
         FileSaver.saveAs(content, zipFilename);
+
     } catch (error) {
-        console.error('下载出错:', error);
-        alert(translations[currentLang].downloadError || '下载出错，请重试');
+        console.error('Download error:', error);
+        alert(translations[currentLang].downloadError || 'Download error, please try again.');
     }
 }
 
@@ -1286,50 +1312,92 @@ function handleDragLeave(e) {
 async function handleDrop(e) {
     e.preventDefault();
     e.stopPropagation();
-    
-    const items = e.dataTransfer.items;
-    const files = [];
+    this.classList.remove('drag-over');
+
+    const items = Array.from(e.dataTransfer.items);
+    const newFiles = [];
     
     for (const item of items) {
         if (item.kind === 'file') {
-            // Handle both modern and legacy browsers
-            if (item.webkitGetAsEntry) {
-                const entry = item.webkitGetAsEntry();
-                if (entry) {
-                    if (entry.isDirectory) {
-                        try {
-                            const dirFiles = await getAllFilesFromDirectory(entry);
-                            files.push(...dirFiles);
-                        } catch (error) {
-                            console.error('Error reading directory:', error);
-                            // Fallback to getting the file directly
-                            const file = item.getAsFile();
-                            if (file) files.push(file);
-                        }
-                    } else {
-                        const file = item.getAsFile();
-                        if (file) files.push(file);
-                    }
+            const entry = item.webkitGetAsEntry();
+            if (entry) {
+                if (entry.isDirectory) {
+                    // Store directory entry for later use
+                    lastUploadDirectory = entry;
+                    // Process directory
+                    const files = await getAllFilesFromDirectory(entry);
+                    newFiles.push(...files);
+                } else if (entry.isFile && isImageFile(entry.name)) {
+                    const file = item.getAsFile();
+                    newFiles.push(file);
                 }
-            } else {
-                // Fallback for browsers that don't support webkitGetAsEntry
-                const file = item.getAsFile();
-                if (file) files.push(file);
             }
         }
     }
-    
-    handleFiles(files);
-}
 
-function handleFiles(files) {
-    const validFiles = files.filter(file => isImageFile(file.name) || isVideoFile(file.name));
-    if (validFiles.length === 0) {
-        ToastManager.showWarning(translations[currentLang].invalidFileType);
+    if (newFiles.length === 0) {
+        ToastManager.showWarning(translations[currentLang].noValidImages || '请拖入图片文件或文件夹', this);
         return;
     }
 
-    uploadedFiles = validFiles;
+    uploadedFiles = uploadedFiles.concat(newFiles);
+    updateFileNameDisplay();
+    updateImagePreview();
+}
+
+function handleFiles(files) {
+    const filesArray = Array.from(files);
+    const validFilesToAdd = [];
+
+    for (const item of filesArray) {
+        let file = null;
+
+        // Handle items from DataTransfer (drag/paste)
+        if (item && typeof item === 'object' && item.kind === 'file' && typeof item.getAsFile === 'function') {
+            file = item.getAsFile();
+        } else if (item instanceof File) {
+            // Handle items directly from file input
+            file = item;
+        }
+
+        // Check if we got a valid File object with a name
+        if (file instanceof File && file.name) {
+            // Check if it's an image or video file
+            if (isImageFile(file.name) || isVideoFile(file.name)) {
+                validFilesToAdd.push(file);
+            } else {
+                console.warn('Skipping non-image/video file:', file.name);
+            }
+        } else {
+            console.warn('Skipping invalid item during file handling:', item);
+        }
+    }
+
+    if (validFilesToAdd.length === 0 && uploadedFiles.length === 0) {
+        // If no valid files were added and the list was already empty, show generic warning
+         ToastManager.showWarning(translations[currentLang].invalidFileType);
+         return;
+    } else if (validFilesToAdd.length === 0 && uploadedFiles.length > 0) {
+        // If no valid files were added but there are already files, maybe the dropped/pasted items were just invalid
+         ToastManager.showWarning(translations[currentLang].noImageOrVideoFiles);
+         return;
+    }
+
+    // Combine existing files with new valid files to add
+    let filesAfterAddition = uploadedFiles.concat(validFilesToAdd);
+
+    // Ensure uploadedFiles only contains unique files (based on name and size)
+    const uniqueFiles = [];
+    const fileHashes = new Set();
+    filesAfterAddition.forEach(file => {
+        const hash = `${file.name}-${file.size}`;
+        if (!fileHashes.has(hash)) {
+            uniqueFiles.push(file);
+            fileHashes.add(hash);
+        }
+    });
+    uploadedFiles = uniqueFiles;
+
     updateFileNameDisplay();
     updateImagePreview();
 }
