@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watermark Position Sliders Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .watermark-controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background-color: #f8fafc;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+        }
+        .slider-control {
+            display: flex;
+            flex-direction: column;
+        }
+        .slider-control label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        .slider-control input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e5e7eb;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+        .slider-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .slider-control .flex {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .slider-control .text-sm {
+            font-size: 0.875rem;
+            color: #6b7280;
+            min-width: 3rem;
+            text-align: right;
+        }
+        .preview-image {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Watermark Position Sliders Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Sliders</h2>
+        <p>This demonstrates how the watermark position sliders will look and function.</p>
+        
+        <div class="watermark-controls">
+            <div class="slider-control">
+                <label>Horizontal Position</label>
+                <div class="flex">
+                    <input type="range" id="horizontal-slider" min="-100" max="100" value="0">
+                    <span class="text-sm" id="horizontal-value">0</span>
+                </div>
+            </div>
+            <div class="slider-control">
+                <label>Vertical Position</label>
+                <div class="flex">
+                    <input type="range" id="vertical-slider" min="-100" max="100" value="0">
+                    <span class="text-sm" id="vertical-value">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3>Current Values:</h3>
+            <p>Horizontal: <span id="horizontal-display">0</span></p>
+            <p>Vertical: <span id="vertical-display">0</span></p>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Instructions</h2>
+        <ol>
+            <li>Select "Center" as the watermark position</li>
+            <li>Upload an image</li>
+            <li>Process the image</li>
+            <li>You should see two sliders appear below the preview image</li>
+            <li>Adjust the sliders to move the watermark position</li>
+            <li>The image will be reprocessed in real-time as you adjust the sliders</li>
+        </ol>
+    </div>
+
+    <script>
+        // Simple test script to demonstrate slider functionality
+        const horizontalSlider = document.getElementById('horizontal-slider');
+        const verticalSlider = document.getElementById('vertical-slider');
+        const horizontalValue = document.getElementById('horizontal-value');
+        const verticalValue = document.getElementById('vertical-value');
+        const horizontalDisplay = document.getElementById('horizontal-display');
+        const verticalDisplay = document.getElementById('vertical-display');
+
+        horizontalSlider.addEventListener('input', function() {
+            horizontalValue.textContent = this.value;
+            horizontalDisplay.textContent = this.value;
+        });
+
+        verticalSlider.addEventListener('input', function() {
+            verticalValue.textContent = this.value;
+            verticalDisplay.textContent = this.value;
+        });
+    </script>
+</body>
+</html> 

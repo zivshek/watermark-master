@@ -853,3 +853,118 @@ html, body {
         max-height: 200px;
     }
 }
+
+/* 添加水印位置调整滑块样式 */
+.watermark-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background-color: #f8fafc;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+}
+
+.slider-control {
+    display: flex;
+    flex-direction: column;
+}
+
+.slider-control label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.slider-control input[type="range"] {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #e5e7eb;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.slider-control input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.slider-control input[type="range"]::-webkit-slider-thumb:hover {
+    background: #2563eb;
+    transform: scale(1.1);
+}
+
+.slider-control input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.slider-control input[type="range"]::-moz-range-thumb:hover {
+    background: #2563eb;
+    transform: scale(1.1);
+}
+
+.slider-control input[type="range"]:focus {
+    background: #d1d5db;
+}
+
+.slider-control .flex {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.slider-control .text-sm {
+    font-size: 0.875rem;
+    color: #6b7280;
+    min-width: 3rem;
+    text-align: right;
+}
+
+@media (max-width: 640px) {
+    .watermark-controls {
+        gap: 0.75rem;
+        padding: 0.75rem;
+    }
+    
+    .slider-control label {
+        font-size: 0.8rem;
+    }
+    
+    .slider-control input[type="range"] {
+        height: 5px;
+    }
+    
+    .slider-control input[type="range"]::-webkit-slider-thumb {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .slider-control input[type="range"]::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+    }
+}

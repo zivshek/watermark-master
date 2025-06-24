@@ -30,6 +30,8 @@ const videoFormat = document.getElementById('videoFormat');
 
 // Declare processedFiles in a higher scope so downloadAllImages can access it
 let processedFiles = [];
+// Add mapping between original and processed files
+let fileMapping = new Map(); // Maps processed file to original file
 
 // 添加 Toast 管理器
 const ToastManager = {
@@ -305,8 +307,8 @@ ${translations[currentLang].opacity}: ${settings.opacity}%`;
                 min-width: 0;
             }
             .watermark-controls {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
+                display: flex;
+                flex-direction: column;
                 gap: 1rem;
             }
             .slider-control {
@@ -480,6 +482,8 @@ async function processFiles() {
                     continue; // Skip adding to zip if name is invalid
                 }
                 processedFiles.push(processedFile);
+                // Store mapping between processed file and original file
+                fileMapping.set(processedFile, file);
                 // Use the name from the processedFile object
                 zip.file(processedFile.name, processedFile);
             } else {
@@ -522,11 +526,44 @@ async function processFiles() {
                 });
                 previewItem.appendChild(previewImg);
 
-                // --- Re-add Image Specific Controls (Simplified for now) ---
-                // If you need per-image sliders back, this section will need more complex logic
-                // to associate controls with the correct preview item and update the *displayed* canvas for that preview.
-                // For now, we'll omit per-image controls here to focus on fixing the core processing flow.
-                // --- End Image Specific Controls ---
+                // Add position adjustment sliders for single watermarks (center position)
+                if (watermarkPosition.value === 'center') {
+                    const controlsContainer = document.createElement('div');
+                    controlsContainer.className = 'watermark-controls mb-4';
+                    
+                    // Create unique ID for this preview item
+                    const uniqueId = `preview-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    // Get the original file from the mapping
+                    const originalFile = fileMapping.get(file) || file;
+                    
+                    // Horizontal position slider
+                    const horizontalSlider = createSliderControl(
+                        `${uniqueId}-horizontal-position`,
+                        translations[currentLang].horizontalPosition || 'Horizontal Position',
+                        -200,
+                        200,
+                        0,
+                        (value) => updateWatermarkPositionForPreview(previewItem, file, uniqueId, value, 'horizontal')
+                    );
+                    
+                    // Vertical position slider
+                    const verticalSlider = createSliderControl(
+                        `${uniqueId}-vertical-position`,
+                        translations[currentLang].verticalPosition || 'Vertical Position',
+                        -200,
+                        200,
+                        0,
+                        (value) => updateWatermarkPositionForPreview(previewItem, file, uniqueId, value, 'vertical')
+                    );
+                    
+                    controlsContainer.appendChild(horizontalSlider);
+                    controlsContainer.appendChild(verticalSlider);
+                    previewItem.appendChild(controlsContainer);
+                    
+                    // Store the original file reference for reprocessing
+                    previewItem.originalFile = originalFile;
+                }
             }
 
             // Add filename input (using the generated name)
@@ -673,7 +710,7 @@ function generateUniqueFilename(originalName, existingFilenames) {
 processButton.addEventListener('click', processFiles);
 
 // Modify processImage to return a Promise that resolves with the processed File object
-function processImage(file, existingFilenames = {}) {
+function processImage(file, existingFilenames = {}, positionAdjustments = { horizontal: 0, vertical: 0 }) {
     console.log('Processing image:', file.name);
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -711,18 +748,6 @@ function processImage(file, existingFilenames = {}) {
                 const lines = text.split('\n');
                 const lineHeight = size * 1.2;
 
-                // Get current adjustments (assuming these controls are somehow associated per-image if needed, or global)
-                // For now, let's assume global adjustments for simplicity or pass them in options if per-image adjustments are needed.
-                // If per-image sliders are created *after* this function returns, they won't be available here.
-                // Let's revert image adjustments for now to simplify the function to just return the processed image.
-
-                // --- Reverted Image Adjustment Logic --- (Will need to re-add this differently if required)
-                // const hSpacing = parseInt(document.getElementById(`${uniqueId}-horizontal-spacing`).value); // uniqueId is not available here
-                // const vSpacing = parseInt(document.getElementById(`${uniqueId}-vertical-spacing`).value); // uniqueId is not available here
-                // const hPosition = parseInt(document.getElementById(`${uniqueId}-horizontal-position`).value); // uniqueId is not available here
-                // const vPosition = parseInt(document.getElementById(`${uniqueId}-vertical-position`).value); // uniqueId is not available here
-                // --- End Reverted Logic ---
-
                 // Simplified tiling logic (without per-image adjustments here)
                 if (position === 'tile') {
                     const angle = -Math.PI / 4;
@@ -751,44 +776,50 @@ function processImage(file, existingFilenames = {}) {
                         }
                     }
                 } else {
-                    // Simplified positioning logic (without per-image adjustments here)
+                    // Apply position adjustments for single watermarks
                     let x, y;
                     ctx.textAlign = 'center'; // Default to center alignment for single watermark
                     ctx.textBaseline = 'middle'; // Default to middle baseline for single watermark
                     const padding = 15;
+                    
+                    // Calculate adjustment scale based on image size
+                    const maxDimension = Math.max(canvas.width, canvas.height);
+                    const adjustmentScale = maxDimension / 400; // Scale adjustments based on image size
+                    const horizontalAdjustment = (positionAdjustments.horizontal || 0) * adjustmentScale;
+                    const verticalAdjustment = (positionAdjustments.vertical || 0) * adjustmentScale;
 
                     switch (position) {
                         case 'center':
-                            x = canvas.width / 2;
-                            y = canvas.height / 2;
+                            x = canvas.width / 2 + horizontalAdjustment;
+                            y = canvas.height / 2 + verticalAdjustment;
                             break;
                         case 'bottomRight':
-                            x = canvas.width - padding;
-                            y = canvas.height - padding;
+                            x = canvas.width - padding + horizontalAdjustment;
+                            y = canvas.height - padding + verticalAdjustment;
                             ctx.textAlign = 'right';
                             ctx.textBaseline = 'bottom';
                             break;
                         case 'bottomLeft':
-                            x = padding;
-                            y = canvas.height - padding;
+                            x = padding + horizontalAdjustment;
+                            y = canvas.height - padding + verticalAdjustment;
                             ctx.textAlign = 'left';
                             ctx.textBaseline = 'bottom';
                             break;
                         case 'topRight':
-                            x = canvas.width - padding;
-                            y = padding;
+                            x = canvas.width - padding + horizontalAdjustment;
+                            y = padding + verticalAdjustment;
                             ctx.textAlign = 'right';
                             ctx.textBaseline = 'top';
                             break;
                         case 'topLeft':
-                            x = padding;
-                            y = padding;
+                            x = padding + horizontalAdjustment;
+                            y = padding + verticalAdjustment;
                             ctx.textAlign = 'left';
                             ctx.textBaseline = 'top';
                             break;
                          default: // Should not happen with select element
-                            x = canvas.width / 2; // Default to center
-                            y = canvas.height / 2;
+                            x = canvas.width / 2 + horizontalAdjustment; // Default to center
+                            y = canvas.height / 2 + verticalAdjustment;
                             break;
                     }
                      lines.forEach((line, index) => {
@@ -986,6 +1017,106 @@ function updateWatermarkPosition(canvas, originalImg, previewImg, uniqueId) {
     previewImg.src = canvas.toDataURL();
 }
 
+// Add debounce function for slider performance optimization
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Add function to update watermark position for preview items
+function updateWatermarkPositionForPreview(previewItem, file, uniqueId, value, direction) {
+    // Store the adjustment values in the preview item's data
+    if (!previewItem.watermarkAdjustments) {
+        previewItem.watermarkAdjustments = { horizontal: 0, vertical: 0 };
+    }
+    previewItem.watermarkAdjustments[direction] = value;
+    
+    // Add visual feedback to show slider is active
+    const slider = document.getElementById(`${uniqueId}-${direction}-position`);
+    if (slider) {
+        const min = parseInt(slider.min);
+        const max = parseInt(slider.max);
+        const percentage = ((value - min) / (max - min)) * 100;
+        slider.style.background = `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${percentage}%, #e5e7eb ${percentage}%, #e5e7eb 100%)`;
+    }
+    
+    // Use debounced reprocessing for better performance
+    if (!previewItem.debouncedReprocess) {
+        previewItem.debouncedReprocess = debounce(() => {
+            reprocessImageWithAdjustments(previewItem, file, uniqueId);
+        }, 300); // 300ms delay
+    }
+    
+    previewItem.debouncedReprocess();
+}
+
+// Function to reprocess image with position adjustments
+async function reprocessImageWithAdjustments(previewItem, file, uniqueId) {
+    try {
+        const adjustments = previewItem.watermarkAdjustments || { horizontal: 0, vertical: 0 };
+        // Use the original file for reprocessing
+        const originalFile = previewItem.originalFile || file;
+        
+        console.log('Reprocessing image with adjustments:', adjustments);
+        console.log('Original file:', originalFile);
+        console.log('Current file:', file);
+        
+        // Add visual feedback
+        const previewImg = previewItem.querySelector('.preview-image');
+        if (previewImg) {
+            previewImg.style.opacity = '0.7';
+            previewImg.style.transition = 'opacity 0.2s ease';
+        }
+        
+        const reprocessedFile = await processImage(originalFile, {}, adjustments);
+        console.log('Reprocessed file:', reprocessedFile);
+        
+        // Update the preview image
+        if (previewImg) {
+            previewImg.src = URL.createObjectURL(reprocessedFile);
+            previewImg.style.opacity = '1';
+        }
+        
+        // Update the file in processedFiles array
+        const fileIndex = processedFiles.findIndex(f => f === file);
+        if (fileIndex > -1) {
+            processedFiles[fileIndex] = reprocessedFile;
+            console.log('Updated processedFiles array at index:', fileIndex);
+        }
+        
+        // Update the download link to use the new reprocessed file
+        const downloadLink = previewItem.querySelector('.download-button');
+        if (downloadLink) {
+            downloadLink.href = URL.createObjectURL(reprocessedFile);
+            downloadLink.download = reprocessedFile.name;
+            console.log('Updated download link');
+        }
+        
+        // Update the filename input if it exists
+        const filenameInput = previewItem.querySelector('input[type="text"]');
+        if (filenameInput) {
+            filenameInput.value = reprocessedFile.name;
+        }
+        
+    } catch (error) {
+        console.error('Error reprocessing image with adjustments:', error);
+        ToastManager.showError('Failed to update watermark position');
+        
+        // Reset opacity on error
+        const previewImg = previewItem.querySelector('.preview-image');
+        if (previewImg) {
+            previewImg.style.opacity = '1';
+        }
+    }
+}
+
 // 添加这个函数
 function updateColorPreview() {
     const color = watermarkColor.value;
@@ -1117,6 +1248,8 @@ function updateImagePreview() {
 function resetAll() {
     uploadedFiles = [];
     lastUploadDirectory = null;
+    processedFiles = [];
+    fileMapping.clear(); // Clear the file mapping
     updateFileInput();
     updateFileNameDisplay();
     updateImagePreview();

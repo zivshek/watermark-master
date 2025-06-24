@@ -91,6 +91,8 @@ const translations = {
         noWatermarkText: '请输入水印文字',
         noValidImages: '请拖入图片文件',
         someImagesIgnored: '已添加 {0} 张图片',
+        horizontalPosition: '水平位置',
+        verticalPosition: '垂直位置',
     },
     'en': {
         title: 'Batch Image Watermark Tool',
@@ -182,6 +184,8 @@ const translations = {
         noWatermarkText: 'Please enter watermark text',
         noValidImages: 'Please drag image files',
         someImagesIgnored: 'Added {0} images',
+        horizontalPosition: 'Horizontal Position',
+        verticalPosition: 'Vertical Position',
     }
 };
 
