@@ -5,6 +5,7 @@ class VideoProcessor {
     this.video = document.createElement('video');
     this.video.muted = true;
     this.video.playsInline = true;
+    this.video.preload = 'metadata'; // Ensure metadata is loaded
   }
 
   async processVideo(file, options) {
@@ -50,38 +51,67 @@ class VideoProcessor {
           resolve(blob);
         };
 
-        // Start processing
-        mediaRecorder.start();
-        this.video.play();
+        // Wait for video to be ready before starting
+        this.video.oncanplay = () => {
+          // Start recording first, then play video
+          mediaRecorder.start();
+          
+          // Small delay to ensure recorder is ready
+          setTimeout(() => {
+            this.video.play();
+          }, 100);
+        };
 
         const duration = this.video.duration;
         let lastReportedPercent = -1;
+        let lastFrameTime = 0;
+        let isProcessing = false;
+
         const processFrame = () => {
           if (this.video.ended || this.video.paused) {
             mediaRecorder.stop();
             return;
           }
 
-          // Draw video frame
-          this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
-          
-          // Add watermark
-          this.addWatermark(watermarkText, position, color, size, opacity, density);
-          
-          // Report progress
-          if (typeof onProgress === 'function' && duration > 0) {
-            const percent = Math.min(100, Math.floor((this.video.currentTime / duration) * 100));
-            if (percent !== lastReportedPercent) {
-              onProgress(percent);
-              lastReportedPercent = percent;
+          // Only process if we have a new frame and video is ready
+          if (this.video.readyState >= 2 && this.video.currentTime !== lastFrameTime) {
+            isProcessing = true;
+            lastFrameTime = this.video.currentTime;
+
+            // Draw video frame
+            this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+            
+            // Add watermark
+            this.addWatermark(watermarkText, position, color, size, opacity, density);
+            
+            // Report progress
+            if (typeof onProgress === 'function' && duration > 0) {
+              const percent = Math.min(100, Math.floor((this.video.currentTime / duration) * 100));
+              if (percent !== lastReportedPercent) {
+                onProgress(percent);
+                lastReportedPercent = percent;
+              }
             }
           }
 
-          requestAnimationFrame(processFrame);
+          // Continue processing frames
+          if (!this.video.ended && !this.video.paused) {
+            requestAnimationFrame(processFrame);
+          }
         };
 
+        // Start processing frames when video starts playing
         this.video.onplay = () => {
-          processFrame();
+          // Wait a bit for the first frame to be available
+          setTimeout(() => {
+            processFrame();
+          }, 50);
+        };
+
+        // Handle video errors
+        this.video.onerror = (error) => {
+          URL.revokeObjectURL(videoUrl);
+          reject(new Error(`Video processing error: ${error.message || 'Unknown error'}`));
         };
       };
 

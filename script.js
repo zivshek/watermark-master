@@ -1460,7 +1460,7 @@ async function handleDrop(e) {
                     // Process directory
                     const files = await getAllFilesFromDirectory(entry);
                     newFiles.push(...files);
-                } else if (entry.isFile && isImageFile(entry.name)) {
+                } else if (entry.isFile) {
                     const file = item.getAsFile();
                     newFiles.push(file);
                 }
