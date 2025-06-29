@@ -65,38 +65,70 @@ class VideoProcessor {
         const duration = this.video.duration;
         let lastReportedPercent = -1;
         let lastFrameTime = 0;
+        let frameCount = 0;
+        let processingQueue = [];
         let isProcessing = false;
+        let hasEnded = false;
 
-        const processFrame = () => {
-          if (this.video.ended || this.video.paused) {
-            mediaRecorder.stop();
+        // Process frames at a controlled rate to prevent freezing
+        const processFrame = async () => {
+          if (this.video.ended || this.video.paused || hasEnded) {
+            if (!hasEnded) {
+              hasEnded = true;
+              console.log('Video processing completed, stopping recorder');
+              mediaRecorder.stop();
+            }
+            return;
+          }
+
+          // Check if video has reached the end
+          if (this.video.currentTime >= duration - 0.1) {
+            if (!hasEnded) {
+              hasEnded = true;
+              console.log('Video reached end, stopping recorder');
+              mediaRecorder.stop();
+            }
             return;
           }
 
           // Only process if we have a new frame and video is ready
           if (this.video.readyState >= 2 && this.video.currentTime !== lastFrameTime) {
-            isProcessing = true;
-            lastFrameTime = this.video.currentTime;
+            const currentTime = this.video.currentTime;
+            lastFrameTime = currentTime;
+            frameCount++;
 
             // Draw video frame
             this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
             
-            // Add watermark
+            // Add watermark (this is the potentially slow operation)
             this.addWatermark(watermarkText, position, color, size, opacity, density);
             
             // Report progress
             if (typeof onProgress === 'function' && duration > 0) {
-              const percent = Math.min(100, Math.floor((this.video.currentTime / duration) * 100));
+              const percent = Math.min(100, Math.floor((currentTime / duration) * 100));
               if (percent !== lastReportedPercent) {
                 onProgress(percent);
                 lastReportedPercent = percent;
               }
             }
-          }
 
-          // Continue processing frames
-          if (!this.video.ended && !this.video.paused) {
-            requestAnimationFrame(processFrame);
+            // For longer videos, add adaptive frame rate control
+            const targetFPS = this.getTargetFPS(duration);
+            const frameDelay = 1000 / targetFPS;
+            
+            // Use setTimeout instead of requestAnimationFrame for better control
+            setTimeout(() => {
+              if (!this.video.ended && !this.video.paused && !hasEnded) {
+                processFrame();
+              }
+            }, frameDelay);
+          } else {
+            // If no new frame, continue checking but with a longer delay
+            setTimeout(() => {
+              if (!this.video.ended && !this.video.paused && !hasEnded) {
+                processFrame();
+              }
+            }, 16); // ~60fps for checking
           }
         };
 
@@ -108,8 +140,28 @@ class VideoProcessor {
           }, 50);
         };
 
+        // Add video ended event listener
+        this.video.onended = () => {
+          console.log('Video ended event triggered');
+          if (!hasEnded) {
+            hasEnded = true;
+            mediaRecorder.stop();
+          }
+        };
+
+        // Add timeout protection for very long videos
+        const maxProcessingTime = Math.max(duration * 1000 * 1.5, 300000); // 1.5x video duration or 5 minutes max
+        setTimeout(() => {
+          if (!hasEnded) {
+            console.log('Processing timeout reached, forcing stop');
+            hasEnded = true;
+            mediaRecorder.stop();
+          }
+        }, maxProcessingTime);
+
         // Handle video errors
         this.video.onerror = (error) => {
+          console.error('Video error:', error);
           URL.revokeObjectURL(videoUrl);
           reject(new Error(`Video processing error: ${error.message || 'Unknown error'}`));
         };
@@ -120,6 +172,19 @@ class VideoProcessor {
         reject(error);
       };
     });
+  }
+
+  // Adaptive frame rate based on video duration
+  getTargetFPS(duration) {
+    if (duration <= 30) {
+      return 30; // Short videos: 30fps
+    } else if (duration <= 120) {
+      return 25; // Medium videos: 25fps
+    } else if (duration <= 300) {
+      return 20; // Longer videos: 20fps
+    } else {
+      return 15; // Very long videos: 15fps
+    }
   }
 
   addWatermark(text, position, color, size, opacity, density = 3) {
