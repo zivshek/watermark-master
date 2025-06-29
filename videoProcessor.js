@@ -69,6 +69,8 @@ class VideoProcessor {
         let processingQueue = [];
         let isProcessing = false;
         let hasEnded = false;
+        let lastProcessTime = 0;
+        let frameLag = 0;
 
         // Process frames at a controlled rate to prevent freezing
         const processFrame = async () => {
@@ -91,10 +93,19 @@ class VideoProcessor {
             return;
           }
 
+          const currentTime = Date.now();
+          const videoCurrentTime = this.video.currentTime;
+          
+          // Calculate frame lag to detect if we're falling behind
+          if (lastProcessTime > 0) {
+            const expectedTime = lastFrameTime + (currentTime - lastProcessTime) / 1000;
+            frameLag = Math.max(0, videoCurrentTime - expectedTime);
+          }
+
           // Only process if we have a new frame and video is ready
-          if (this.video.readyState >= 2 && this.video.currentTime !== lastFrameTime) {
-            const currentTime = this.video.currentTime;
-            lastFrameTime = currentTime;
+          if (this.video.readyState >= 2 && videoCurrentTime !== lastFrameTime) {
+            lastFrameTime = videoCurrentTime;
+            lastProcessTime = currentTime;
             frameCount++;
 
             // Draw video frame
@@ -105,16 +116,23 @@ class VideoProcessor {
             
             // Report progress
             if (typeof onProgress === 'function' && duration > 0) {
-              const percent = Math.min(100, Math.floor((currentTime / duration) * 100));
+              const percent = Math.min(100, Math.floor((videoCurrentTime / duration) * 100));
               if (percent !== lastReportedPercent) {
                 onProgress(percent);
                 lastReportedPercent = percent;
               }
             }
 
-            // For longer videos, add adaptive frame rate control
-            const targetFPS = this.getTargetFPS(duration);
-            const frameDelay = 1000 / targetFPS;
+            // Adaptive frame rate based on lag
+            let targetFPS = this.getTargetFPS(duration);
+            
+            // If we're falling behind, increase frame rate to catch up
+            if (frameLag > 0.5) {
+              targetFPS = Math.min(30, targetFPS * 1.5);
+              console.log(`Frame lag detected: ${frameLag.toFixed(2)}s, increasing FPS to ${targetFPS}`);
+            }
+            
+            const frameDelay = Math.max(16, 1000 / targetFPS); // Minimum 16ms delay
             
             // Use setTimeout instead of requestAnimationFrame for better control
             setTimeout(() => {
@@ -123,12 +141,12 @@ class VideoProcessor {
               }
             }, frameDelay);
           } else {
-            // If no new frame, continue checking but with a longer delay
+            // If no new frame, continue checking but with a shorter delay
             setTimeout(() => {
               if (!this.video.ended && !this.video.paused && !hasEnded) {
                 processFrame();
               }
-            }, 16); // ~60fps for checking
+            }, 8); // Faster checking when no new frame
           }
         };
 
