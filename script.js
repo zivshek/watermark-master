@@ -374,6 +374,9 @@ async function processImages() {
 // 添加事件监听
 processButton.addEventListener('click', processImages);
 
+// 初始化显示选项复选框
+initializeDisplayOptions();
+
 function processImage(file, existingFilenames = {}) {
     console.log('Processing image:', file.name);
     const reader = new FileReader();
@@ -562,51 +565,30 @@ function processImage(file, existingFilenames = {}) {
 
             previewItem.appendChild(watermarkControls);
 
-            // 添加文件名输入区域
-            const filenameContainer = document.createElement('div');
-            filenameContainer.className = 'mb-4';
-
-            const filenameLabel = document.createElement('label');
-            filenameLabel.className = 'block text-gray-700 text-sm font-bold mb-2';
-            filenameLabel.textContent = '文件名';
-            filenameContainer.appendChild(filenameLabel);
-
-            const filenameInput = document.createElement('input');
-            filenameInput.type = 'text';
-            filenameInput.className = 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline';
-            filenameInput.spellcheck = false;
-            filenameInput.autocomplete = 'off';
-            filenameInput.addEventListener('paste', (e) => {
-                e.stopPropagation();
-            });
-
-            const imgDataUrl = canvas.toDataURL();
-            if (existingFilenames[imgDataUrl]) {
-                filenameInput.value = existingFilenames[imgDataUrl];
+            // 生成自动文件名 (不显示输入框)
+            const timestamp = getFormattedTimestamp();
+            let autoFilename;
+            if (file.name && file.name !== 'image.png') {
+                const originalName = file.name.substring(0, file.name.lastIndexOf('.'));
+                const extension = file.name.substring(file.name.lastIndexOf('.'));
+                const watermarkIdentifier = '_已加水印_';
+                autoFilename = `${originalName}${watermarkIdentifier}${timestamp}${extension}`;
             } else {
-                const timestamp = getFormattedTimestamp();
-                if (file.name && file.name !== 'image.png') {
-                    const originalName = file.name.substring(0, file.name.lastIndexOf('.'));
-                    const extension = file.name.substring(file.name.lastIndexOf('.'));
-                    const watermarkIdentifier = '_已加水印_';
-                    filenameInput.value = `${originalName}${watermarkIdentifier}${timestamp}${extension}`;
-                } else {
-                    filenameInput.value = `image_${timestamp}.png`;
-                }
+                autoFilename = `image_${timestamp}.png`;
             }
 
-            filenameContainer.appendChild(filenameInput);
-            previewItem.appendChild(filenameContainer);
+            // 存储文件名到预览项的数据属性
+            previewItem.setAttribute('data-filename', autoFilename);
 
             const buttonGroup = document.createElement('div');
-            buttonGroup.className = 'button-group';
+            buttonGroup.className = 'flex space-x-2 button-group';
 
             const downloadLink = document.createElement('a');
             downloadLink.href = canvas.toDataURL(file.type || 'image/png');
             downloadLink.className = 'download-button';
             downloadLink.textContent = '下载图片';
             downloadLink.addEventListener('click', function (e) {
-                let filename = filenameInput.value;
+                let filename = autoFilename;
                 if (!filename.match(/\.[^.]+$/)) {
                     filename += '.png';
                 }
@@ -622,6 +604,9 @@ function processImage(file, existingFilenames = {}) {
 
             previewItem.appendChild(buttonGroup);
             previewContainer.appendChild(previewItem);
+
+            // 应用显示设置到新创建的预览项
+            applyDisplaySettings();
         }
         img.src = e.target.result;
     }
@@ -633,13 +618,12 @@ function createSliderControl(id, label, min, max, defaultValue, onChange) {
     const container = document.createElement('div');
     container.className = 'slider-control';
 
-    const labelElement = document.createElement('label');
-    labelElement.className = 'block text-gray-700 text-sm font-bold mb-2';
-    labelElement.textContent = label;
-    container.appendChild(labelElement);
-
     const sliderContainer = document.createElement('div');
-    sliderContainer.className = 'flex items-center space-x-2';
+    sliderContainer.className = 'flex items-center space-x-3';
+
+    const labelElement = document.createElement('label');
+    labelElement.className = 'text-gray-700 text-xs font-medium w-16 flex-shrink-0';
+    labelElement.textContent = label;
 
     const slider = document.createElement('input');
     slider.type = 'range';
@@ -665,6 +649,7 @@ function createSliderControl(id, label, min, max, defaultValue, onChange) {
         }
     });
 
+    sliderContainer.appendChild(labelElement);
     sliderContainer.appendChild(slider);
     sliderContainer.appendChild(valueDisplay);
     container.appendChild(sliderContainer);
@@ -700,7 +685,7 @@ function updateWatermarkPosition(canvas, originalImg, previewImg, uniqueId) {
         const vSpacingPercent = parseInt(document.getElementById(`${uniqueId}-vertical-spacing`).value);
         const hPositionPercent = parseInt(document.getElementById(`${uniqueId}-horizontal-position`).value);
         const vPositionPercent = parseInt(document.getElementById(`${uniqueId}-vertical-position`).value);
-        
+
         // 转换百分比为像素值
         const hSpacing = (hSpacingPercent / 100) * canvas.width;
         const vSpacing = (vSpacingPercent / 100) * canvas.height;
@@ -980,13 +965,9 @@ async function downloadAllImages() {
         // 等待所有图片添加完成
         await Promise.all(previewItems.map(async (previewItem) => {
             const img = previewItem.querySelector('img');
-            const filenameInput = previewItem.querySelector('input[type="text"]');
 
-            // 确保文件名有后缀
-            let filename = filenameInput.value.trim();
-            if (!filename.toLowerCase().match(/\.(png|jpe?g|gif|webp|bmp)$/)) {
-                filename += '.png';
-            }
+            // 从数据属性获取文件名
+            let filename = previewItem.getAttribute('data-filename') || 'image.png';
 
             try {
                 const response = await fetch(img.src);
@@ -1241,5 +1222,54 @@ function getAllFilesFromDirectory(dirEntry) {
 function getFileFromEntry(entry) {
     return new Promise((resolve, reject) => {
         entry.file(resolve, reject);
+    });
+}
+
+// 初始化显示选项
+function initializeDisplayOptions() {
+    const hideSliders = document.getElementById('hideSliders');
+    const hideButtons = document.getElementById('hideButtons');
+
+    // 从localStorage加载设置
+    const savedHideSliders = localStorage.getItem('hideSliders') === 'true';
+    const savedHideButtons = localStorage.getItem('hideButtons') === 'true';
+
+    // 设置默认值（隐藏）
+    hideSliders.checked = savedHideSliders !== null ? savedHideSliders : true;
+    hideButtons.checked = savedHideButtons !== null ? savedHideButtons : true;
+
+    // 应用初始设置
+    applyDisplaySettings();
+
+    // 添加事件监听器
+    hideSliders.addEventListener('change', () => {
+        localStorage.setItem('hideSliders', hideSliders.checked);
+        applyDisplaySettings();
+    });
+
+    hideButtons.addEventListener('change', () => {
+        localStorage.setItem('hideButtons', hideButtons.checked);
+        applyDisplaySettings();
+    });
+}
+
+// 应用显示设置
+function applyDisplaySettings() {
+    const hideSliders = document.getElementById('hideSliders').checked;
+    const hideButtons = document.getElementById('hideButtons').checked;
+
+    // 控制所有现有预览项的显示
+    document.querySelectorAll('.preview-item').forEach(item => {
+        // 控制滑块显示
+        const sliderControls = item.querySelectorAll('.slider-control');
+        sliderControls.forEach(control => {
+            control.style.display = hideSliders ? 'none' : 'block';
+        });
+
+        // 控制按钮显示
+        const buttonGroup = item.querySelector('.flex.space-x-2');
+        if (buttonGroup) {
+            buttonGroup.style.display = hideButtons ? 'none' : 'flex';
+        }
     });
 }

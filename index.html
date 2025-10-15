@@ -309,6 +309,13 @@
     .bg-gray-50 {
       background-color: #f9fafb;
     }
+    
+    /* Checkbox styling */
+    input[type="checkbox"] {
+      width: 1rem;
+      height: 1rem;
+      accent-color: #3b82f6;
+    }
 
     /* Container width utilities */
     .max-w-7xl {
@@ -606,6 +613,18 @@
               <label class="form-label" for="watermarkOpacity">透明度(%)</label>
               <input class="form-input compact number-input" id="watermarkOpacity" type="number" min="0" max="100"
                 value="50" step="1" />
+            </div>
+          </div>
+          
+          <!-- 显示选项 -->
+          <div class="mt-4 flex flex-wrap gap-6">
+            <div class="flex items-center">
+              <input type="checkbox" id="hideSliders" class="mr-2">
+              <label for="hideSliders" class="text-sm text-gray-700">隐藏调节滑块</label>
+            </div>
+            <div class="flex items-center">
+              <input type="checkbox" id="hideButtons" class="mr-2">
+              <label for="hideButtons" class="text-sm text-gray-700">隐藏下载按钮</label>
             </div>
           </div>
         </div>
