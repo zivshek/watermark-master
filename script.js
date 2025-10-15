@@ -263,6 +263,12 @@ async function initialize() {
 
         // 初始化 Toast 管理器
         ToastManager.initialize();
+        
+        // 初始化完成，隐藏加载器
+        const pageLoader = document.getElementById('pageLoader');
+        if (pageLoader) {
+            pageLoader.style.display = 'none';
+        }
     } catch (error) {
         console.error('Initialization error:', error);
         // 确保即使出错也移除loading状态

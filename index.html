@@ -435,6 +435,12 @@
           loadingMask.remove();
         }, 300);
       }
+
+      // 移除页面加载器
+      const pageLoader = document.getElementById('pageLoader');
+      if (pageLoader) {
+        pageLoader.style.display = 'none';
+      }
     });
   </script>
 </body>
