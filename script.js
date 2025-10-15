@@ -563,9 +563,10 @@ function processImage(file, existingFilenames = {}) {
             // 存储原始图片和画布，用于实时预览更新
             previewItem.originalImage = img;
             previewItem.canvas = canvas;
+            previewItem.originalFileType = file.type || 'image/jpeg'; // 默认为JPEG
 
             const previewImg = document.createElement('img');
-            previewImg.src = canvas.toDataURL();
+            previewImg.src = getOptimizedDataURL(canvas, file.type);
             previewImg.className = 'preview-image w-full h-auto mb-4 cursor-pointer';
             previewImg.addEventListener('click', function () {
                 modalImage.src = this.src;
@@ -631,10 +632,11 @@ function processImage(file, existingFilenames = {}) {
             let autoFilename;
             if (file.name && file.name !== 'image.png') {
                 const originalName = file.name.substring(0, file.name.lastIndexOf('.'));
+                const extension = file.name.substring(file.name.lastIndexOf('.'));
                 const watermarkIdentifier = '_已加水印_';
-                autoFilename = `${originalName}${watermarkIdentifier}${timestamp}.png`;
+                autoFilename = `${originalName}${watermarkIdentifier}${timestamp}${extension}`;
             } else {
-                autoFilename = `image_${timestamp}.png`;
+                autoFilename = `image_${timestamp}.jpg`;
             }
 
             // 存储文件名到预览项的数据属性
@@ -644,7 +646,7 @@ function processImage(file, existingFilenames = {}) {
             buttonGroup.className = 'flex space-x-2 button-group';
 
             const downloadLink = document.createElement('a');
-            downloadLink.href = canvas.toDataURL(file.type || 'image/png');
+            downloadLink.href = getOptimizedDataURL(canvas, file.type);
             downloadLink.className = 'download-button';
             downloadLink.textContent = '下载图片';
             downloadLink.addEventListener('click', function (e) {
@@ -830,7 +832,7 @@ function updateWatermarkPosition(canvas, originalImg, previewImg, uniqueId) {
             }
         }
 
-        previewImg.src = canvas.toDataURL();
+        previewImg.src = getOptimizedDataURL(canvas, previewImg.originalFileType || 'image/jpeg');
     } catch (error) {
         console.error('Error updating watermark position:', error);
     }
@@ -1523,7 +1525,7 @@ async function updateAllPreviews() {
                 });
 
                 // 更新预览图片
-                img.src = canvas.toDataURL();
+                img.src = getOptimizedDataURL(canvas, previewItem.originalFileType);
                 console.log('Updated preview image');
             } else {
                 console.log('Missing elements for preview update');
@@ -1661,4 +1663,21 @@ function hideUpdateIndicator() {
     if (indicator) {
         indicator.style.display = 'none';
     }
+}
+// 获取优化的canvas数据URL，保持文件大小合理
+function getOptimizedDataURL(canvas, originalFileType) {
+    // 如果是JPEG，使用JPEG格式和压缩
+    if (originalFileType && originalFileType.includes('jpeg') || originalFileType.includes('jpg')) {
+        return canvas.toDataURL('image/jpeg', 0.85); // 85%质量，平衡质量和文件大小
+    }
+
+    // 如果是PNG，尝试JPEG转换以减小文件大小（除非需要透明度）
+    if (originalFileType && originalFileType.includes('png')) {
+        // 对于PNG，我们可以选择保持PNG格式或转换为JPEG
+        // 这里我们转换为JPEG以减小文件大小，除非用户特别需要透明度
+        return canvas.toDataURL('image/jpeg', 0.90); // 稍高质量用于PNG转换
+    }
+
+    // 默认使用JPEG格式
+    return canvas.toDataURL('image/jpeg', 0.85);
 }
