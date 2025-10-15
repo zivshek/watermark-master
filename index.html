@@ -309,6 +309,25 @@
     .bg-gray-50 {
       background-color: #f9fafb;
     }
+    
+    /* Loading spinner animation */
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    .animate-spin {
+      animation: spin 1s linear infinite;
+    }
+    
+    /* Button disabled state */
+    .opacity-75 {
+      opacity: 0.75;
+    }
+    
+    .cursor-not-allowed {
+      cursor: not-allowed;
+    }
 
     /* Checkbox styling */
     input[type="checkbox"] {
