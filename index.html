@@ -324,6 +324,64 @@
     .whitespace-nowrap {
       white-space: nowrap;
     }
+    
+    /* Grid utilities */
+    .grid { display: grid; }
+    .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+    .gap-4 { gap: 1rem; }
+    
+    /* Responsive grid */
+    @media (min-width: 640px) {
+      .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (min-width: 1024px) {
+      .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (min-width: 1280px) {
+      .xl\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    
+    /* Improved slider styling */
+    .slider-improved {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: #e5e7eb;
+      outline: none;
+      transition: background 0.15s ease;
+    }
+    
+    .slider-improved::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    
+    .slider-improved::-webkit-slider-thumb:hover {
+      background: #2563eb;
+      transform: scale(1.1);
+    }
+    
+    .slider-improved::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+    }
+    
+    .slider-improved::-moz-range-thumb:hover {
+      background: #2563eb;
+      transform: scale(1.1);
+    }
   </style>
   <!-- 异步加载非关键 CSS -->
   <link rel="preload" href="styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
@@ -444,8 +502,8 @@
             <div class="form-group">
               <label class="form-label" for="watermarkDensity">密度</label>
               <select class="form-select compact wide" id="watermarkDensity">
-                <option value="2">2x2 (4个水印)</option>
-                <option value="3" selected>3x3 (9个水印)</option>
+                <option value="2" selected>2x2 (4个水印)</option>
+                <option value="3">3x3 (9个水印)</option>
                 <option value="4">4x4 (16个水印)</option>
                 <option value="5">5x5 (25个水印)</option>
                 <option value="6">6x6 (36个水印)</option>
@@ -476,7 +534,7 @@
             <div class="form-group">
               <label class="form-label" for="watermarkOpacity">透明度(%)</label>
               <input class="form-input compact number-input" id="watermarkOpacity" type="number" min="0" max="100"
-                value="80" step="1" />
+                value="50" step="1" />
             </div>
           </div>
         </div>
@@ -512,7 +570,7 @@
             一键全部下载
           </button>
         </div>
-        <div id="previewContainer" class="space-y-4"></div>
+        <div id="previewContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
       </div>
     </div>
   </div>

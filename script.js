@@ -26,58 +26,58 @@ const watermarkPosition = document.getElementById('watermarkPosition');
 const ToastManager = {
     container: null,
     queue: [],
-    
+
     initialize() {
         // 创建 Toast 容器
         this.container = document.createElement('div');
         this.container.className = 'toast-container';
         document.body.appendChild(this.container);
     },
-    
+
     show(message, type = 'info', duration = 3000, isInline = false, targetElement = null) {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         toast.textContent = message;
-        
+
         if (isInline && targetElement) {
             // 创建内联提示
             const warningDiv = document.createElement('div');
             warningDiv.className = 'inline-warning';
             warningDiv.textContent = message;
-            
+
             // 插入到目标元素后面
             targetElement.parentNode.insertBefore(warningDiv, targetElement.nextSibling);
-            
+
             // 添加显示类
             setTimeout(() => warningDiv.classList.add('show'), 10);
-            
+
             // 设置定时移除
             setTimeout(() => {
                 warningDiv.classList.remove('show');
                 setTimeout(() => warningDiv.remove(), 300);
             }, duration);
-            
+
             return;
         }
-        
+
         // 添加到容器
         this.container.appendChild(toast);
-        
+
         // 触发重排以启动动画
         toast.offsetHeight;
         toast.classList.add('show');
-        
+
         // 设置定时移除
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 300);
         }, duration);
     },
-    
+
     showWarning(message, targetElement = null) {
         this.show(message, 'warning', 3000, true, targetElement);
     },
-    
+
     showError(message, targetElement = null) {
         this.show(message, 'error', 3000, true, targetElement);
     }
@@ -86,22 +86,22 @@ const ToastManager = {
 // 添加输入警告状态管理
 function showInputWarning(input, message) {
     input.classList.add('input-warning');
-    
+
     // 移除现有的警告文本
     const existingWarning = input.parentNode.querySelector('.warning-text');
     if (existingWarning) {
         existingWarning.remove();
     }
-    
+
     // 创建新的警告文本
     const warningText = document.createElement('div');
     warningText.className = 'warning-text';
     warningText.textContent = message;
     input.parentNode.appendChild(warningText);
-    
+
     // 触发动画
     setTimeout(() => warningText.classList.add('show'), 10);
-    
+
     // 设置自动移除
     setTimeout(() => {
         input.classList.remove('input-warning');
@@ -134,7 +134,7 @@ async function initialize() {
             watermarkColor.value = colorPicker.value;
             updateColorPreview();
         });
-        imageModal.addEventListener('click', function() {
+        imageModal.addEventListener('click', function () {
             console.log('Modal clicked');
             this.classList.add('hidden');
         });
@@ -144,14 +144,14 @@ async function initialize() {
         // 修改这部分代码
         const pasteArea = document.getElementById('pasteArea');
         const imageInput = document.getElementById('imageInput');
-        
+
         // 点击上传文件
         pasteArea.addEventListener('click', () => imageInput.click());
-        
+
         // 粘贴处理
         pasteArea.addEventListener('paste', handlePaste);
         document.addEventListener('paste', handlePaste);
-        
+
         // 文件选择处理
         imageInput.addEventListener('change', handleFileSelect);
 
@@ -180,20 +180,20 @@ async function initialize() {
 
         const watermarkPosition = document.getElementById('watermarkPosition');
         watermarkPosition.addEventListener('change', toggleWatermarkDensity);
-        
+
         // 初始调用一次，以设置初始状态
         toggleWatermarkDensity();
         updateWatermarkDensityOptions(false);
 
         // 添加水印文本输入框的事件监听
         const watermarkTextArea = document.getElementById('watermarkText');
-        
+
         // 添加自动调整高度的函数
         function adjustTextareaHeight(textarea) {
             const paddingY = 8; // 上下内边距（与 py-2 对应）
             const baseHeight = 38; // 单行时的总高度
             const lines = textarea.value.split('\n').length;
-            
+
             if (lines === 1) {
                 textarea.style.height = `${baseHeight}px`;
             } else {
@@ -213,27 +213,27 @@ async function initialize() {
             console.log('加载历史水印设置:', lastSettings);
             if (lastSettings) {
                 const settings = JSON.parse(lastSettings);
-                
+
                 // 先设置位置，这会触发密度选项的更新
                 watermarkPosition.value = settings.position;
                 toggleWatermarkDensity();
-                
+
                 // 然后设置其他值
                 watermarkText.value = settings.text;
                 watermarkDensity.value = settings.density;
                 watermarkColor.value = settings.color;
                 watermarkSize.value = settings.size;
                 watermarkOpacity.value = settings.opacity;
-                
+
                 // 更新UI状态
                 adjustTextareaHeight(watermarkText);
                 updateColorPreview();
-                
+
                 // 处理长文本，最多显示10个字符
-                const displayText = settings.text.length > 10 
-                    ? settings.text.substring(0, 10) + '...' 
+                const displayText = settings.text.length > 10
+                    ? settings.text.substring(0, 10) + '...'
                     : settings.text;
-                
+
                 // 设置显示文本
                 previousWatermarkText.textContent = displayText;
                 // 设置完整文本作为title属性，鼠标悬停时显示
@@ -243,10 +243,10 @@ async function initialize() {
 颜色: ${settings.color}
 字号: ${settings.size}%
 透明度: ${settings.opacity}%`;
-                
+
                 // 添加样式
                 previousWatermarkText.className = 'ml-1 truncate max-w-[150px] inline-block align-middle';
-                
+
                 reuseWatermarkBtn.classList.remove('hidden');
                 console.log('显示重用按钮');
             } else {
@@ -263,7 +263,7 @@ async function initialize() {
 
         // 初始化 Toast 管理器
         ToastManager.initialize();
-        
+
         // 初始化完成，隐藏加载器
         const pageLoader = document.getElementById('pageLoader');
         if (pageLoader) {
@@ -299,7 +299,7 @@ async function processImages() {
         if (!text.trim()) {
             watermarkText.classList.add('input-warning');
             ToastManager.showWarning('请输入水印文字', watermarkText);
-            
+
             // 3秒后移除警告状态
             setTimeout(() => {
                 watermarkText.classList.remove('input-warning');
@@ -320,7 +320,7 @@ async function processImages() {
         localStorage.setItem('lastWatermarkSettings', JSON.stringify(watermarkSettings));
         console.log('水印设置已保存到 localStorage');
         previousWatermarkText.textContent = text;
-        
+
         // 显示处理中的 loader
         processingLoader.style.display = 'block';
         processButton.disabled = true;
@@ -330,7 +330,7 @@ async function processImages() {
             const pasteArea = document.getElementById('pasteArea');
             pasteArea.classList.add('upload-warning');
             ToastManager.showWarning('请选择至少一张图片', pasteArea);
-            
+
             // 3秒后移除警告状态
             setTimeout(() => {
                 pasteArea.classList.remove('upload-warning');
@@ -358,7 +358,7 @@ async function processImages() {
 
         // 显示结果区域
         resultSection.classList.remove('hidden');
-        
+
         // 滚动到结果区域
         resultSection.scrollIntoView({ behavior: 'smooth' });
     } catch (error) {
@@ -377,9 +377,9 @@ processButton.addEventListener('click', processImages);
 function processImage(file, existingFilenames = {}) {
     console.log('Processing image:', file.name);
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         const img = new Image();
-        img.onload = function() {
+        img.onload = function () {
             const canvas = document.createElement('canvas');
             canvas.width = img.width;
             canvas.height = img.height;
@@ -402,7 +402,7 @@ function processImage(file, existingFilenames = {}) {
                 return;
             }
 
-            ctx.fillStyle = `rgba(${parseInt(color.slice(1,3),16)}, ${parseInt(color.slice(3,5),16)}, ${parseInt(color.slice(5,7),16)}, ${opacity})`;
+            ctx.fillStyle = `rgba(${parseInt(color.slice(1, 3), 16)}, ${parseInt(color.slice(3, 5), 16)}, ${parseInt(color.slice(5, 7), 16)}, ${opacity})`;
             ctx.font = `${size}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
@@ -425,7 +425,7 @@ function processImage(file, existingFilenames = {}) {
                         ctx.save();
                         ctx.translate(x, y);
                         ctx.rotate(angle);
-                        
+
                         if (lines.length === 1) {
                             ctx.fillText(text, 0, 0);
                         } else {
@@ -434,14 +434,14 @@ function processImage(file, existingFilenames = {}) {
                                 ctx.fillText(line, 0, yOffset);
                             });
                         }
-                        
+
                         ctx.restore();
                     }
                 }
             } else if (position === 'center') {
                 const x = canvas.width / 2;
                 const y = canvas.height / 2;
-                
+
                 if (lines.length === 1) {
                     ctx.fillText(text, x, y);
                 } else {
@@ -503,7 +503,7 @@ function processImage(file, existingFilenames = {}) {
             const previewImg = document.createElement('img');
             previewImg.src = canvas.toDataURL();
             previewImg.className = 'preview-image w-full h-auto mb-4 cursor-pointer';
-            previewImg.addEventListener('click', function() {
+            previewImg.addEventListener('click', function () {
                 modalImage.src = this.src;
                 imageModal.classList.remove('hidden');
             });
@@ -565,7 +565,7 @@ function processImage(file, existingFilenames = {}) {
             // 添加文件名输入区域
             const filenameContainer = document.createElement('div');
             filenameContainer.className = 'mb-4';
-            
+
             const filenameLabel = document.createElement('label');
             filenameLabel.className = 'block text-gray-700 text-sm font-bold mb-2';
             filenameLabel.textContent = '文件名';
@@ -579,7 +579,7 @@ function processImage(file, existingFilenames = {}) {
             filenameInput.addEventListener('paste', (e) => {
                 e.stopPropagation();
             });
-            
+
             const imgDataUrl = canvas.toDataURL();
             if (existingFilenames[imgDataUrl]) {
                 filenameInput.value = existingFilenames[imgDataUrl];
@@ -594,7 +594,7 @@ function processImage(file, existingFilenames = {}) {
                     filenameInput.value = `image_${timestamp}.png`;
                 }
             }
-            
+
             filenameContainer.appendChild(filenameInput);
             previewItem.appendChild(filenameContainer);
 
@@ -605,7 +605,7 @@ function processImage(file, existingFilenames = {}) {
             downloadLink.href = canvas.toDataURL(file.type || 'image/png');
             downloadLink.className = 'download-button';
             downloadLink.textContent = '下载图片';
-            downloadLink.addEventListener('click', function(e) {
+            downloadLink.addEventListener('click', function (e) {
                 let filename = filenameInput.value;
                 if (!filename.match(/\.[^.]+$/)) {
                     filename += '.png';
@@ -647,15 +647,22 @@ function createSliderControl(id, label, min, max, defaultValue, onChange) {
     slider.min = min;
     slider.max = max;
     slider.value = defaultValue;
-    slider.className = 'flex-1';
-    slider.addEventListener('input', (e) => onChange(parseInt(e.target.value)));
+    slider.className = 'flex-1 slider-improved';
 
     const valueDisplay = document.createElement('span');
     valueDisplay.className = 'text-sm text-gray-600 w-12 text-right';
     valueDisplay.textContent = defaultValue;
 
+    // 简化版本 - 直接响应
     slider.addEventListener('input', (e) => {
-        valueDisplay.textContent = e.target.value;
+        const value = parseInt(e.target.value);
+        valueDisplay.textContent = value;
+
+        try {
+            onChange(value);
+        } catch (error) {
+            console.error('Slider onChange error:', error);
+        }
     });
 
     sliderContainer.appendChild(slider);
@@ -667,111 +674,115 @@ function createSliderControl(id, label, min, max, defaultValue, onChange) {
 
 // 更新水印位置
 function updateWatermarkPosition(canvas, originalImg, previewImg, uniqueId) {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(originalImg, 0, 0);
+    try {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(originalImg, 0, 0);
 
-    const text = watermarkText.value;
-    const position = watermarkPosition.value;
-    const density = position === 'tile' ? parseInt(watermarkDensity.value) : 1;
-    const color = watermarkColor.value;
-    const smallerDimension = Math.min(canvas.width, canvas.height);
-    const size = Math.round((parseInt(watermarkSize.value) / 100) * smallerDimension);
-    const opacity = parseInt(document.getElementById('watermarkOpacity').value) / 100;
+        const text = watermarkText.value;
+        const position = watermarkPosition.value;
+        const density = position === 'tile' ? parseInt(watermarkDensity.value) : 1;
+        const color = watermarkColor.value;
+        const smallerDimension = Math.min(canvas.width, canvas.height);
+        const size = Math.round((parseInt(watermarkSize.value) / 100) * smallerDimension);
+        const opacity = parseInt(document.getElementById('watermarkOpacity').value) / 100;
 
-    ctx.fillStyle = `rgba(${parseInt(color.slice(1,3),16)}, ${parseInt(color.slice(3,5),16)}, ${parseInt(color.slice(5,7),16)}, ${opacity})`;
-    ctx.font = `${size}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+        ctx.fillStyle = `rgba(${parseInt(color.slice(1, 3), 16)}, ${parseInt(color.slice(3, 5), 16)}, ${parseInt(color.slice(5, 7), 16)}, ${opacity})`;
+        ctx.font = `${size}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
 
-    const lines = text.split('\n');
-    const lineHeight = size * 1.2;
+        const lines = text.split('\n');
+        const lineHeight = size * 1.2;
 
-    // 获取当前图片的所有滑块值
-    const hSpacing = parseInt(document.getElementById(`${uniqueId}-horizontal-spacing`).value);
-    const vSpacing = parseInt(document.getElementById(`${uniqueId}-vertical-spacing`).value);
-    const hPosition = parseInt(document.getElementById(`${uniqueId}-horizontal-position`).value);
-    const vPosition = parseInt(document.getElementById(`${uniqueId}-vertical-position`).value);
+        // 获取当前图片的所有滑块值
+        const hSpacing = parseInt(document.getElementById(`${uniqueId}-horizontal-spacing`).value);
+        const vSpacing = parseInt(document.getElementById(`${uniqueId}-vertical-spacing`).value);
+        const hPosition = parseInt(document.getElementById(`${uniqueId}-horizontal-position`).value);
+        const vPosition = parseInt(document.getElementById(`${uniqueId}-vertical-position`).value);
 
-    if (position === 'tile') {
-        const angle = -Math.PI / 4;
-        const cellWidth = canvas.width / density;
-        const cellHeight = canvas.height / density;
+        if (position === 'tile') {
+            const angle = -Math.PI / 4;
+            const cellWidth = canvas.width / density;
+            const cellHeight = canvas.height / density;
 
-        for (let i = 0; i < density; i++) {
-            for (let j = 0; j < density; j++) {
-                const x = (i + 0.5) * cellWidth + hPosition + (i * hSpacing);
-                const y = (j + 0.5) * cellHeight + vPosition + (j * vSpacing);
+            for (let i = 0; i < density; i++) {
+                for (let j = 0; j < density; j++) {
+                    const x = (i + 0.5) * cellWidth + hPosition + (i * hSpacing);
+                    const y = (j + 0.5) * cellHeight + vPosition + (j * vSpacing);
 
-                ctx.save();
-                ctx.translate(x, y);
-                ctx.rotate(angle);
-                
-                if (lines.length === 1) {
-                    ctx.fillText(text, 0, 0);
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(angle);
+
+                    if (lines.length === 1) {
+                        ctx.fillText(text, 0, 0);
+                    } else {
+                        lines.forEach((line, index) => {
+                            const yOffset = (index - (lines.length - 1) / 2) * lineHeight;
+                            ctx.fillText(line, 0, yOffset);
+                        });
+                    }
+
+                    ctx.restore();
+                }
+            }
+        } else {
+            const padding = 15;
+            let x, y;
+
+            switch (position) {
+                case 'bottomRight':
+                    x = canvas.width - padding + hPosition;
+                    y = canvas.height - padding + vPosition;
+                    ctx.textAlign = 'right';
+                    ctx.textBaseline = 'bottom';
+                    break;
+                case 'bottomLeft':
+                    x = padding + hPosition;
+                    y = canvas.height - padding + vPosition;
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'bottom';
+                    break;
+                case 'topRight':
+                    x = canvas.width - padding + hPosition;
+                    y = padding + vPosition;
+                    ctx.textAlign = 'right';
+                    ctx.textBaseline = 'top';
+                    break;
+                case 'topLeft':
+                    x = padding + hPosition;
+                    y = padding + vPosition;
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
+                    break;
+                case 'center':
+                    x = canvas.width / 2 + hPosition;
+                    y = canvas.height / 2 + vPosition;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    break;
+            }
+
+            if (lines.length === 1) {
+                ctx.fillText(text, x, y);
+            } else {
+                if (position.startsWith('bottom')) {
+                    lines.reverse().forEach((line, index) => {
+                        ctx.fillText(line, x, y - index * (lineHeight + vSpacing));
+                    });
                 } else {
                     lines.forEach((line, index) => {
-                        const yOffset = (index - (lines.length - 1) / 2) * lineHeight;
-                        ctx.fillText(line, 0, yOffset);
+                        ctx.fillText(line, x, y + index * (lineHeight + vSpacing));
                     });
                 }
-                
-                ctx.restore();
             }
         }
-    } else {
-        const padding = 15;
-        let x, y;
 
-        switch (position) {
-            case 'bottomRight':
-                x = canvas.width - padding + hPosition;
-                y = canvas.height - padding + vPosition;
-                ctx.textAlign = 'right';
-                ctx.textBaseline = 'bottom';
-                break;
-            case 'bottomLeft':
-                x = padding + hPosition;
-                y = canvas.height - padding + vPosition;
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'bottom';
-                break;
-            case 'topRight':
-                x = canvas.width - padding + hPosition;
-                y = padding + vPosition;
-                ctx.textAlign = 'right';
-                ctx.textBaseline = 'top';
-                break;
-            case 'topLeft':
-                x = padding + hPosition;
-                y = padding + vPosition;
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'top';
-                break;
-            case 'center':
-                x = canvas.width / 2 + hPosition;
-                y = canvas.height / 2 + vPosition;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                break;
-        }
-
-        if (lines.length === 1) {
-            ctx.fillText(text, x, y);
-        } else {
-            if (position.startsWith('bottom')) {
-                lines.reverse().forEach((line, index) => {
-                    ctx.fillText(line, x, y - index * (lineHeight + vSpacing));
-                });
-            } else {
-                lines.forEach((line, index) => {
-                    ctx.fillText(line, x, y + index * (lineHeight + vSpacing));
-                });
-            }
-        }
+        previewImg.src = canvas.toDataURL();
+    } catch (error) {
+        console.error('Error updating watermark position:', error);
     }
-
-    previewImg.src = canvas.toDataURL();
 }
 
 // 添加这个函数
@@ -796,7 +807,7 @@ colorPicker.addEventListener('input', () => {
 });
 
 // 确保这段代码在文件末尾
-imageModal.addEventListener('click', function() {
+imageModal.addEventListener('click', function () {
     console.log('Modal clicked'); // 添加调试日志
     this.classList.add('hidden');
 });
@@ -808,7 +819,7 @@ console.log('modalImage element:', modalImage);
 function initializeFileInput() {
     const fileInput = document.getElementById('imageInput');
     const pasteArea = document.getElementById('pasteArea');
-    
+
     // 添加清除所有图片按钮
     const clearButton = document.createElement('button');
     clearButton.className = 'ml-2 text-sm text-red-500 hover:text-red-700';
@@ -819,10 +830,10 @@ function initializeFileInput() {
         updateFileNameDisplay();
         updateImagePreview();
     });
-    
+
     const fileStatusContainer = document.querySelector('.file-status-container');
     fileStatusContainer.appendChild(clearButton);
-    
+
     fileInput.addEventListener('change', handleFileSelect);
 }
 
@@ -857,7 +868,7 @@ function handlePaste(e) {
 // 修改 updateFileNameDisplay 函数
 function updateFileNameDisplay() {
     const fileNameDisplay = document.querySelector('.file-status-container span');
-    
+
     if (uploadedFiles.length > 0) {
         const fileCount = uploadedFiles.length;
         const filesSelectedText = '张图片已选择';
@@ -875,10 +886,10 @@ function updateImagePreview() {
     // 显示所有已上传图片的缩略预览（不再限制为30）
     uploadedFiles.forEach((file, index) => {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             const previewWrapper = document.createElement('div');
             previewWrapper.className = 'relative group';
-            
+
             const img = document.createElement('img');
             img.src = e.target.result;
             img.className = 'w-16 h-16 object-cover rounded';
@@ -886,7 +897,7 @@ function updateImagePreview() {
             img.width = 64;  // 添加明确的尺寸
             img.height = 64;
             previewWrapper.appendChild(img);
-            
+
             // 添加删除按钮
             const deleteButton = document.createElement('button');
             deleteButton.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity';
@@ -903,7 +914,7 @@ function updateImagePreview() {
                 updateImagePreview();
             };
             previewWrapper.appendChild(deleteButton);
-            
+
             imagePreviewArea.appendChild(previewWrapper);
         }
         reader.readAsDataURL(file);
@@ -921,9 +932,9 @@ function resetAll() {
     updateImagePreview();
     document.getElementById('watermarkText').value = '';
     document.getElementById('watermarkPosition').value = 'tile'; // 重置水印位置
-    document.getElementById('watermarkDensity').value = '3';
+    document.getElementById('watermarkDensity').value = '2';
     document.getElementById('watermarkDensity').disabled = false;
-    document.getElementById('watermarkColor').value = '#dedede';
+    document.getElementById('watermarkColor').value = '#ffffff';
     document.getElementById('watermarkSize').value = '5'; // Default to 5% of image size
     updateColorPreview();
     previewContainer.innerHTML = '';
@@ -933,7 +944,7 @@ function resetAll() {
     document.getElementById('watermarkDensity').disabled = false;
     updateWatermarkDensityOptions(false);
     toggleWatermarkDensity();
-    document.getElementById('watermarkOpacity').value = '80';
+    document.getElementById('watermarkOpacity').value = '50';
 }
 
 function updateFileInput() {
@@ -944,7 +955,7 @@ function updateFileInput() {
 
 async function downloadAllImages() {
     console.log('Download all images triggered');
-    
+
     if (previewContainer.children.length === 0) {
         alert('没有可下载的图片');
         return;
@@ -958,19 +969,19 @@ async function downloadAllImages() {
 
     // 收集所有预览项
     const previewItems = Array.from(previewContainer.querySelectorAll('.preview-item'));
-    
+
     try {
         // 等待所有图片添加完成
         await Promise.all(previewItems.map(async (previewItem) => {
             const img = previewItem.querySelector('img');
             const filenameInput = previewItem.querySelector('input[type="text"]');
-            
+
             // 确保文件名有后缀
             let filename = filenameInput.value.trim();
             if (!filename.toLowerCase().match(/\.(png|jpe?g|gif|webp|bmp)$/)) {
                 filename += '.png';
             }
-            
+
             try {
                 const response = await fetch(img.src);
                 const blob = await response.blob();
@@ -1002,30 +1013,30 @@ async function downloadAllImages() {
 function getFormattedTimestamp() {
     const now = new Date();
     return now.getFullYear() +
-           String(now.getMonth() + 1).padStart(2, '0') +
-           String(now.getDate()).padStart(2, '0') +
-           String(now.getHours()).padStart(2, '0') +
-           String(now.getMinutes()).padStart(2, '0');
+        String(now.getMonth() + 1).padStart(2, '0') +
+        String(now.getDate()).padStart(2, '0') +
+        String(now.getHours()).padStart(2, '0') +
+        String(now.getMinutes()).padStart(2, '0');
 }
 
 function handleMobileInteraction() {
-  const isMobile = window.innerWidth <= 640;
-  const processButton = document.getElementById('processButton');
-  const resetButton = document.getElementById('resetButton');
+    const isMobile = window.innerWidth <= 640;
+    const processButton = document.getElementById('processButton');
+    const resetButton = document.getElementById('resetButton');
 
-  if (isMobile) {
-    processButton.textContent = '处理';
-    resetButton.textContent = '重置';
-  } else {
-    processButton.textContent = '处理图片';
-    resetButton.textContent = '重置';
-  }
+    if (isMobile) {
+        processButton.textContent = '处理';
+        resetButton.textContent = '重置';
+    } else {
+        processButton.textContent = '处理图片';
+        resetButton.textContent = '重置';
+    }
 }
 
 function toggleWatermarkDensity() {
     const watermarkPosition = document.getElementById('watermarkPosition');
     const watermarkDensity = document.getElementById('watermarkDensity');
-    
+
     if (watermarkPosition.value === 'tile') {
         watermarkDensity.disabled = false;
         watermarkDensity.value = watermarkDensity.getAttribute('data-previous-value') || '3';
@@ -1044,8 +1055,8 @@ function updateWatermarkDensityOptions(singleWatermark) {
         watermarkDensity.innerHTML = `<option value="1">1个水印</option>`;
     } else {
         watermarkDensity.innerHTML = `
-            <option value="2">2x2 (4个水印)</option>
-            <option value="3" selected>3x3 (9个水印)</option>
+            <option value="2" selected>2x2 (4个水印)</option>
+            <option value="3">3x3 (9个水印)</option>
             <option value="4">4x4 (16个水印)</option>
             <option value="5">5x5 (25个水印)</option>
             <option value="6">6x6 (36个水印)</option>
@@ -1090,15 +1101,15 @@ async function copyImageToClipboard(canvas) {
 const watermarkOpacity = document.getElementById('watermarkOpacity');
 
 // 在输入时只做基本的字符验证
-watermarkOpacity.addEventListener('input', function(e) {
+watermarkOpacity.addEventListener('input', function (e) {
     // 移除非数字字符
     this.value = this.value.replace(/[^\d]/g, '');
 });
 
 // 在失去焦点时进行值的范围验证
-watermarkOpacity.addEventListener('blur', function(e) {
+watermarkOpacity.addEventListener('blur', function (e) {
     let value = parseInt(this.value);
-    
+
     if (isNaN(value) || value === '') {
         value = 80; // 默认值
     } else if (value < 0) {
@@ -1106,7 +1117,7 @@ watermarkOpacity.addEventListener('blur', function(e) {
     } else if (value > 100) {
         value = 100;
     }
-    
+
     this.value = value;
 });
 
@@ -1139,25 +1150,25 @@ async function handleDrop(e) {
 
     const items = Array.from(e.dataTransfer.items);
     const newFiles = [];
-    
+
     for (const item of items) {
         console.log('Processing item:', item);
         console.log('Item kind:', item.kind);
-        
+
         if (item.kind === 'file') {
             const entry = item.webkitGetAsEntry();
             console.log('File entry:', entry);
-            
+
             if (entry) {
                 if (entry.isDirectory) {
                     console.log('Directory entry found:', entry);
                     console.log('Directory name:', entry.name);
                     console.log('Directory fullPath:', entry.fullPath);
-                    
+
                     // Store directory entry for later use
                     lastUploadDirectory = entry;
                     console.log('Stored directory entry:', lastUploadDirectory);
-                    
+
                     // Process directory
                     const files = await getAllFilesFromDirectory(entry);
                     console.log('Files from directory:', files);
@@ -1193,7 +1204,7 @@ function getAllFilesFromDirectory(dirEntry) {
     return new Promise((resolve, reject) => {
         const files = [];
         const reader = dirEntry.createReader();
-        
+
         function readEntries() {
             reader.readEntries(async (entries) => {
                 if (entries.length === 0) {
