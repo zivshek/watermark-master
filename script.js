@@ -516,45 +516,45 @@ function processImage(file, existingFilenames = {}) {
             const watermarkControls = document.createElement('div');
             watermarkControls.className = 'watermark-controls mb-4 space-y-4';
 
-            // 水平间距调整
+            // 水平间距调整 (百分比)
             const hSpacingControl = createSliderControl(
                 `${uniqueId}-horizontal-spacing`,
-                '水平间距',
-                -200,
-                200,
+                '水平间距(%)',
+                -50,
+                50,
                 0,
                 (value) => updateWatermarkPosition(canvas, img, previewImg, uniqueId)
             );
             watermarkControls.appendChild(hSpacingControl);
 
-            // 垂直间距调整
+            // 垂直间距调整 (百分比)
             const vSpacingControl = createSliderControl(
                 `${uniqueId}-vertical-spacing`,
-                '垂直间距',
-                -200,
-                200,
+                '垂直间距(%)',
+                -50,
+                50,
                 0,
                 (value) => updateWatermarkPosition(canvas, img, previewImg, uniqueId)
             );
             watermarkControls.appendChild(vSpacingControl);
 
-            // 水平位置调整
+            // 水平位置调整 (百分比)
             const hPositionControl = createSliderControl(
                 `${uniqueId}-horizontal-position`,
-                '水平位置',
-                -300,
-                300,
+                '水平位置(%)',
+                -50,
+                50,
                 0,
                 (value) => updateWatermarkPosition(canvas, img, previewImg, uniqueId)
             );
             watermarkControls.appendChild(hPositionControl);
 
-            // 垂直位置调整
+            // 垂直位置调整 (百分比)
             const vPositionControl = createSliderControl(
                 `${uniqueId}-vertical-position`,
-                '垂直位置',
-                -300,
-                300,
+                '垂直位置(%)',
+                -50,
+                50,
                 0,
                 (value) => updateWatermarkPosition(canvas, img, previewImg, uniqueId)
             );
@@ -695,11 +695,17 @@ function updateWatermarkPosition(canvas, originalImg, previewImg, uniqueId) {
         const lines = text.split('\n');
         const lineHeight = size * 1.2;
 
-        // 获取当前图片的所有滑块值
-        const hSpacing = parseInt(document.getElementById(`${uniqueId}-horizontal-spacing`).value);
-        const vSpacing = parseInt(document.getElementById(`${uniqueId}-vertical-spacing`).value);
-        const hPosition = parseInt(document.getElementById(`${uniqueId}-horizontal-position`).value);
-        const vPosition = parseInt(document.getElementById(`${uniqueId}-vertical-position`).value);
+        // 获取当前图片的所有滑块值 (百分比) 并转换为像素
+        const hSpacingPercent = parseInt(document.getElementById(`${uniqueId}-horizontal-spacing`).value);
+        const vSpacingPercent = parseInt(document.getElementById(`${uniqueId}-vertical-spacing`).value);
+        const hPositionPercent = parseInt(document.getElementById(`${uniqueId}-horizontal-position`).value);
+        const vPositionPercent = parseInt(document.getElementById(`${uniqueId}-vertical-position`).value);
+        
+        // 转换百分比为像素值
+        const hSpacing = (hSpacingPercent / 100) * canvas.width;
+        const vSpacing = (vSpacingPercent / 100) * canvas.height;
+        const hPosition = (hPositionPercent / 100) * canvas.width;
+        const vPosition = (vPositionPercent / 100) * canvas.height;
 
         if (position === 'tile') {
             const angle = -Math.PI / 4;
