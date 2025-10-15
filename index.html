@@ -195,6 +195,135 @@
     .mb-6 {
       margin-bottom: 1.5rem;
     }
+
+    /* 添加网格布局样式 */
+    .grid {
+      display: grid;
+    }
+
+    .grid-cols-1 {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+
+    .gap-4 {
+      gap: 1rem;
+    }
+
+    /* 响应式网格 */
+    @media (min-width: 640px) {
+      .sm\:grid-cols-5 {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+    }
+
+    /* Compact Form Styles */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .form-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.25rem;
+      white-space: nowrap;
+    }
+
+    .form-select.compact,
+    .form-input.compact {
+      padding: 0.375rem 0.5rem;
+      font-size: 0.875rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.375rem;
+      background-color: white;
+      transition: all 0.15s ease;
+      min-width: 0;
+    }
+
+    .form-select.compact {
+      width: 7rem;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right 0.5rem center;
+      background-repeat: no-repeat;
+      background-size: 1rem 1rem;
+      padding-right: 2rem;
+    }
+
+    .form-select.compact.wide {
+      width: 9rem;
+    }
+
+    .form-input.compact.number-input {
+      width: 4rem;
+      text-align: center;
+    }
+
+    .form-input.compact.color-input {
+      width: 5.5rem;
+      padding-right: 2rem;
+    }
+
+    .form-select.compact:focus,
+    .form-input.compact:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .color-preview-btn {
+      position: absolute;
+      right: 0.375rem;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+    }
+
+    .color-preview {
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 0.25rem;
+      border: 1px solid #d1d5db;
+      background-color: #dedede;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+
+    .color-preview:hover {
+      transform: scale(1.1);
+    }
+
+    .color-picker-hidden {
+      position: absolute;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+
+    /* Background styling */
+    .bg-gray-50 {
+      background-color: #f9fafb;
+    }
+
+    /* Text area specific styling */
+    .form-input.compact.w-full {
+      width: 100% !important;
+      min-width: 100%;
+    }
+
+    /* Flexbox utilities */
+    .flex-1 {
+      flex: 1;
+    }
+
+    .whitespace-nowrap {
+      white-space: nowrap;
+    }
   </style>
   <!-- 异步加载非关键 CSS -->
   <link rel="preload" href="styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
@@ -278,103 +407,76 @@
             <!-- 动态加载的图片预览将使用 loading="lazy" -->
           </div>
         </div>
-        <div class="mb-4">
-          <div class="flex justify-between items-center mb-2">
-            <label class="block text-gray-700 text-sm font-bold" for="watermarkText">
-              文字
-            </label>
+        <!-- 文字设置 - 紧凑布局 -->
+        <div class="mb-4 bg-gray-50 rounded-lg p-4">
+          <div class="flex items-center gap-4">
+            <textarea class="form-input compact resize-none flex-1" id="watermarkText" rows="1" maxlength="100"
+              placeholder="输入水印文字，可回车换行" style="min-height: 38px; line-height: 22px;"></textarea>
             <button id="reuseWatermark"
-              class="text-sm text-gray-500 hover:text-blue-500 flex items-center transition-colors duration-200">
-              <svg class="w-4 h-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              class="text-xs text-gray-500 hover:text-blue-500 flex items-center transition-colors duration-200 whitespace-nowrap">
+              <svg class="w-3 h-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd"
                   d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
                   clip-rule="evenodd" />
               </svg>
               <span>填入上一次：</span>
-              <span id="previousWatermarkText" class="ml-1 truncate max-w-[150px]">测试水印</span>
+              <span id="previousWatermarkText" class="ml-1 truncate max-w-[100px]">测试水印</span>
             </button>
           </div>
-          <textarea
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-sm focus:outline-none focus:shadow-outline resize-none transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            id="watermarkText" rows="1" maxlength="100" placeholder="输入水印文字，可回车换行"
-            style="min-height: 38px; line-height: 22px;"></textarea>
         </div>
-        <div class="mb-4 flex flex-wrap -mx-2">
-          <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="watermarkPosition">
-              位置
-            </label>
-            <select
-              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
-              id="watermarkPosition">
-              <option value="tile" selected>
-                整体平铺
-              </option>
-              <option value="center">
-                居中
-              </option>
-              <option value="bottomRight">
-                右下角
-              </option>
-              <option value="bottomLeft">
-                左下角
-              </option>
-              <option value="topRight">
-                右上角
-              </option>
-              <option value="topLeft">
-                左上角
-              </option>
-            </select>
-          </div>
-          <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="watermarkDensity">
-              密度
-            </label>
-            <select
-              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
-              id="watermarkDensity">
-              <option value="2">2x2 (4个水印)</option>
-              <option value="3" selected>
-                3x3 (9个水印)
-              </option>
-              <option value="4">4x4 (16个水印)</option>
-              <option value="5">5x5 (25个水印)</option>
-              <option value="6">6x6 (36个水印)</option>
-            </select>
-          </div>
-          <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="watermarkColor">
-              颜色
-            </label>
-            <div class="relative">
-              <input
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
-                id="watermarkColor" type="text" value="#dedede" placeholder="#dedede" />
-              <div class="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer">
-                <div id="colorPreview" class="w-6 h-6 rounded border border-gray-300"></div>
+        <!-- 水印设置 - 紧凑布局 -->
+        <div class="mb-4 bg-gray-50 rounded-lg p-4">
+          <div class="flex flex-wrap items-end gap-6">
+            <!-- 位置 -->
+            <div class="form-group">
+              <label class="form-label" for="watermarkPosition">位置</label>
+              <select class="form-select compact" id="watermarkPosition">
+                <option value="tile" selected>整体平铺</option>
+                <option value="center">居中</option>
+                <option value="bottomRight">右下角</option>
+                <option value="bottomLeft">左下角</option>
+                <option value="topRight">右上角</option>
+                <option value="topLeft">左上角</option>
+              </select>
+            </div>
+
+            <!-- 密度 -->
+            <div class="form-group">
+              <label class="form-label" for="watermarkDensity">密度</label>
+              <select class="form-select compact wide" id="watermarkDensity">
+                <option value="2">2x2 (4个水印)</option>
+                <option value="3" selected>3x3 (9个水印)</option>
+                <option value="4">4x4 (16个水印)</option>
+                <option value="5">5x5 (25个水印)</option>
+                <option value="6">6x6 (36个水印)</option>
+              </select>
+            </div>
+
+            <!-- 颜色 -->
+            <div class="form-group">
+              <label class="form-label" for="watermarkColor">颜色</label>
+              <div class="relative">
+                <input class="form-input compact color-input" id="watermarkColor" type="text" value="#dedede"
+                  placeholder="#dedede" />
+                <div class="color-preview-btn">
+                  <div id="colorPreview" class="color-preview"></div>
+                </div>
+                <input type="color" id="colorPicker" class="color-picker" aria-label="选择颜色" />
               </div>
-              <input type="color" id="colorPicker" class="absolute opacity-0 -z-10" aria-label="选择颜色" />
             </div>
-          </div>
-          <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="watermarkSize">
-              字号(%)
-            </label>
-            <div class="relative">
-              <input
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
-                id="watermarkSize" type="number" min="1" max="50" value="5" step="1" />
+
+            <!-- 字号 -->
+            <div class="form-group">
+              <label class="form-label" for="watermarkSize">字号(%)</label>
+              <input class="form-input compact number-input" id="watermarkSize" type="number" min="1" max="50" value="5"
+                step="1" />
             </div>
-          </div>
-          <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="watermarkOpacity">
-              透明度(%)
-            </label>
-            <div class="relative">
-              <input
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
-                id="watermarkOpacity" type="number" min="0" max="100" value="80" step="1" />
+
+            <!-- 透明度 -->
+            <div class="form-group">
+              <label class="form-label" for="watermarkOpacity">透明度(%)</label>
+              <input class="form-input compact number-input" id="watermarkOpacity" type="number" min="0" max="100"
+                value="80" step="1" />
             </div>
           </div>
         </div>
@@ -440,6 +542,39 @@
       const pageLoader = document.getElementById('pageLoader');
       if (pageLoader) {
         pageLoader.style.display = 'none';
+      }
+
+      // 设置颜色选择器功能
+      const colorPreview = document.getElementById('colorPreview');
+      const colorPicker = document.getElementById('colorPicker');
+      const colorInput = document.getElementById('watermarkColor');
+
+      if (colorPreview && colorPicker && colorInput) {
+        // 点击颜色预览打开颜色选择器
+        colorPreview.addEventListener('click', () => {
+          colorPicker.click();
+        });
+
+        // 颜色选择器改变时更新预览和输入框
+        colorPicker.addEventListener('change', (e) => {
+          const color = e.target.value;
+          colorInput.value = color;
+          colorPreview.style.backgroundColor = color;
+        });
+
+        // 输入框改变时更新预览
+        colorInput.addEventListener('input', (e) => {
+          const color = e.target.value;
+          if (/^#[0-9A-Fa-f]{6}$/.test(color)) {
+            colorPreview.style.backgroundColor = color;
+            colorPicker.value = color;
+          }
+        });
+
+        // 初始化颜色预览
+        const initialColor = colorInput.value || '#dedede';
+        colorPreview.style.backgroundColor = initialColor;
+        colorPicker.value = initialColor;
       }
     });
   </script>
