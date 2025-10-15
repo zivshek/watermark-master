@@ -325,6 +325,29 @@ async function processImages() {
         processingLoader.style.display = 'block';
         processButton.disabled = true;
 
+        // 初始化进度条
+        const totalFiles = uploadedFiles.length;
+        console.log('Total files to process:', totalFiles);
+        if (totalFiles > 0) {
+            // 显示进度条容器
+            const mainProgressContainer = document.getElementById('mainProgressContainer');
+            if (mainProgressContainer) {
+                mainProgressContainer.style.display = 'block';
+            }
+
+            // 设置初始状态
+            const mainProgressText = document.getElementById('mainProgressText');
+            const mainProgressTitle = document.getElementById('mainProgressTitle');
+            const mainProgressBarFill = document.getElementById('mainProgressBarFill');
+
+            if (mainProgressText) mainProgressText.textContent = `0 / ${totalFiles}`;
+            if (mainProgressTitle) mainProgressTitle.textContent = '准备处理图片...';
+            if (mainProgressBarFill) mainProgressBarFill.style.width = '0%';
+
+            // 给用户一点时间看到初始状态
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+
         // 处理图片
         if (uploadedFiles.length === 0) {
             const pasteArea = document.getElementById('pasteArea');
@@ -352,7 +375,37 @@ async function processImages() {
         previewContainer.innerHTML = '';
 
         // 处理每张图片
-        for (const file of uploadedFiles) {
+        for (let i = 0; i < uploadedFiles.length; i++) {
+            const file = uploadedFiles[i];
+
+            // 更新进度条 - 在处理前显示当前状态
+            const current = i + 1;
+            const total = uploadedFiles.length;
+            const percentage = (current / total) * 100;
+
+            console.log(`Progress: ${current}/${total} (${percentage}%)`);
+
+            // 直接更新DOM元素
+            const mainProgressText = document.getElementById('mainProgressText');
+            const mainProgressTitle = document.getElementById('mainProgressTitle');
+            const mainProgressBarFill = document.getElementById('mainProgressBarFill');
+
+            if (mainProgressText) {
+                mainProgressText.textContent = `${current} / ${total}`;
+                console.log('Updated text to:', mainProgressText.textContent);
+            }
+            if (mainProgressTitle) {
+                mainProgressTitle.textContent = `正在处理第 ${current} 张图片`;
+                console.log('Updated title to:', mainProgressTitle.textContent);
+            }
+            if (mainProgressBarFill) {
+                mainProgressBarFill.style.width = `${percentage}%`;
+                console.log('Updated width to:', mainProgressBarFill.style.width);
+            }
+
+            // 小延迟让用户看到进度更新
+            await new Promise(resolve => setTimeout(resolve, 200));
+
             await processImage(file, existingFilenames);
         }
 
@@ -365,8 +418,9 @@ async function processImages() {
         console.error('处理图片时出错:', error);
         ToastManager.showError('处理图片时出错，请重试');
     } finally {
-        // 隐藏处理中的 loader
+        // 隐藏处理中的 loader 和进度条
         processingLoader.style.display = 'none';
+        hideMainProgressBar();
         processButton.disabled = false;
     }
 }
@@ -1273,3 +1327,94 @@ function applyDisplaySettings() {
         }
     });
 }
+
+// Old progress bar functions removed - using main progress bar now
+
+// 主进度条管理函数
+function showMainProgressBar(current, total) {
+    console.log('showMainProgressBar called:', current, total);
+    const mainProgressContainer = document.getElementById('mainProgressContainer');
+    const mainProgressText = document.getElementById('mainProgressText');
+    const mainProgressTitle = document.getElementById('mainProgressTitle');
+
+    if (mainProgressContainer) {
+        mainProgressContainer.style.display = 'block';
+        console.log('Main progress container shown');
+    }
+
+    if (mainProgressText) {
+        mainProgressText.textContent = `${current} / ${total}`;
+    }
+
+    if (mainProgressTitle) {
+        if (current === 0) {
+            mainProgressTitle.textContent = '准备处理图片...';
+        } else {
+            mainProgressTitle.textContent = `正在处理第 ${current} 张图片`;
+        }
+    }
+
+    updateMainProgressBar(current, total);
+}
+
+function updateMainProgressBar(current, total) {
+    console.log('updateMainProgressBar called:', current, total);
+    const mainProgressBarFill = document.getElementById('mainProgressBarFill');
+    const mainProgressText = document.getElementById('mainProgressText');
+    const mainProgressTitle = document.getElementById('mainProgressTitle');
+
+    const percentage = total > 0 ? (current / total) * 100 : 0;
+    console.log('Setting main progress to:', percentage + '%');
+
+    console.log('Elements found:', {
+        fill: !!mainProgressBarFill,
+        text: !!mainProgressText,
+        title: !!mainProgressTitle
+    });
+
+    if (mainProgressBarFill) {
+        console.log('Before update - width:', mainProgressBarFill.style.width);
+        mainProgressBarFill.style.width = `${percentage}%`;
+        console.log('After update - width:', mainProgressBarFill.style.width);
+    }
+
+    if (mainProgressText) {
+        console.log('Before update - text:', mainProgressText.textContent);
+        mainProgressText.textContent = `${current} / ${total}`;
+        console.log('After update - text:', mainProgressText.textContent);
+    }
+
+    if (mainProgressTitle) {
+        const titleText = current === total ? '处理完成!' : `正在处理第 ${current} 张图片`;
+        console.log('Before update - title:', mainProgressTitle.textContent);
+        mainProgressTitle.textContent = titleText;
+        console.log('After update - title:', mainProgressTitle.textContent);
+    }
+}
+
+function hideMainProgressBar() {
+    console.log('hideMainProgressBar called');
+    const mainProgressContainer = document.getElementById('mainProgressContainer');
+
+    if (mainProgressContainer) {
+        // 延迟隐藏，让用户看到100%完成
+        setTimeout(() => {
+            mainProgressContainer.style.display = 'none';
+        }, 1000);
+    }
+}
+// Test function to manually test progress bar
+function testProgressBar() {
+    console.log('Testing progress bar...');
+    showMainProgressBar(0, 5);
+
+    setTimeout(() => updateMainProgressBar(1, 5), 1000);
+    setTimeout(() => updateMainProgressBar(2, 5), 2000);
+    setTimeout(() => updateMainProgressBar(3, 5), 3000);
+    setTimeout(() => updateMainProgressBar(4, 5), 4000);
+    setTimeout(() => updateMainProgressBar(5, 5), 5000);
+    setTimeout(() => hideMainProgressBar(), 6000);
+}
+
+// You can call testProgressBar() in the console to test
+window.testProgressBar = testProgressBar;

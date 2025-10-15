@@ -316,6 +316,69 @@
       height: 1rem;
       accent-color: #3b82f6;
     }
+    
+    /* Progress bar styling */
+    #progressContainer {
+      width: 100% !important;
+      max-width: 300px !important;
+      margin: 0 auto !important;
+      padding: 10px !important;
+      background-color: rgba(255, 255, 255, 0.1) !important;
+      border-radius: 8px !important;
+      display: block !important;
+    }
+    
+    .progress-container {
+      width: 100%;
+      max-width: 300px;
+      margin: 0 auto;
+      padding: 10px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+    }
+    
+    .progress-bar-bg {
+      width: 100%;
+      height: 12px;
+      background-color: #e5e7eb;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #d1d5db;
+    }
+    
+    .progress-bar-fill {
+      height: 100%;
+      background-color: #3b82f6;
+      border-radius: 6px;
+      transition: width 0.3s ease;
+      width: 0%;
+      min-width: 2px;
+    }
+    
+    .progress-text {
+      text-align: center;
+      font-size: 0.875rem;
+      color: #374151;
+      margin-top: 0.5rem;
+      font-weight: 600;
+    }
+    
+    /* Main progress bar styling */
+    .main-progress-bar-bg {
+      width: 100%;
+      height: 8px;
+      background-color: #f3f4f6;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .main-progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #34d399);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
 
     /* Container width utilities */
     .container {
@@ -664,12 +727,25 @@
         </div>
         <div id="processingLoader" class="processing-loader">
           <div class="loader"></div>
-          <p class="mt-2">
+          <p class="mt-2" id="processingText">
             正在处理图片，请稍候...
           </p>
         </div>
       </div>
     </div>
+    <!-- 进度条区域 -->
+    <div id="mainProgressContainer" class="mb-4" style="display: none;">
+      <div class="bg-white rounded-lg shadow-sm p-3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-medium text-gray-700" id="mainProgressTitle">正在处理图片...</span>
+          <span class="text-sm text-gray-600" id="mainProgressText">0 / 0</span>
+        </div>
+        <div class="main-progress-bar-bg">
+          <div class="main-progress-bar-fill" id="mainProgressBarFill"></div>
+        </div>
+      </div>
+    </div>
+    
     <!-- 在 previewContainer 上方添加以下代码 -->
     <div id="resultSection" class="hidden">
       <div class="flex justify-between items-center mb-4">
