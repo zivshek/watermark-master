@@ -630,11 +630,10 @@ function processImage(file, existingFilenames = {}) {
             // 生成自动文件名 (不显示输入框)
             const timestamp = getFormattedTimestamp();
             let autoFilename;
-            if (file.name && file.name !== 'image.png') {
+            if (file.name && file.name !== 'image.jpg') {
                 const originalName = file.name.substring(0, file.name.lastIndexOf('.'));
-                const extension = file.name.substring(file.name.lastIndexOf('.'));
                 const watermarkIdentifier = '_已加水印_';
-                autoFilename = `${originalName}${watermarkIdentifier}${timestamp}${extension}`;
+                autoFilename = `${originalName}${watermarkIdentifier}${timestamp}.jpg`;
             } else {
                 autoFilename = `image_${timestamp}.jpg`;
             }
@@ -652,7 +651,7 @@ function processImage(file, existingFilenames = {}) {
             downloadLink.addEventListener('click', function (e) {
                 let filename = autoFilename;
                 if (!filename.match(/\.[^.]+$/)) {
-                    filename += '.png';
+                    filename += '.jpg';
                 }
                 this.download = filename;
             });
@@ -1041,13 +1040,13 @@ async function downloadAllImages() {
             const img = previewItem.querySelector('img');
 
             // 从数据属性获取文件名
-            let filename = previewItem.getAttribute('data-filename') || 'image.png';
+            let filename = previewItem.getAttribute('data-filename') || 'image.jpg';
 
             try {
                 const response = await fetch(img.src);
                 const blob = await response.blob();
                 // 确保blob的type是正确的
-                const imageBlob = new Blob([blob], { type: 'image/png' });
+                const imageBlob = new Blob([blob], { type: 'image/jpg' });
                 zip.file(filename, imageBlob, { binary: true });
             } catch (error) {
                 console.error('处理图片出错:', error);
