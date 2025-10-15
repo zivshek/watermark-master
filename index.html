@@ -309,7 +309,7 @@
     .bg-gray-50 {
       background-color: #f9fafb;
     }
-    
+
     /* Checkbox styling */
     input[type="checkbox"] {
       width: 1rem;
@@ -318,6 +318,17 @@
     }
 
     /* Container width utilities */
+    .container {
+      width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .max-w-6xl {
+      max-width: 72rem;
+      /* 1152px */
+    }
+
     .max-w-7xl {
       max-width: 80rem;
       /* 1280px */
@@ -327,9 +338,19 @@
       width: 100%;
     }
 
+    .px-4 {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+
     .px-6 {
       padding-left: 1.5rem;
       padding-right: 1.5rem;
+    }
+
+    .mx-auto {
+      margin-left: auto;
+      margin-right: auto;
     }
 
     /* Override preview-item margin for grid layout */
@@ -516,153 +537,153 @@
   </nav>
   <!-- 添加一个占位 div，防止内容被固定导航栏遮挡 -->
   <div class="h-16"></div>
-  <div class="w-full px-6 py-8 mt-16">
-    <div class="w-full">
-      <div class="title-container">
-        <h1 class="text-3xl font-bold mb-2 text-center">
-          <span class="pc-title">简易图片加水印</span>
-        </h1>
-      </div>
-      <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-        <div class="mb-4">
-          <label class="block text-gray-700 text-sm font-bold mb-2" for="imageInput">
-            选择图片
-          </label>
-          <input id="imageInput" type="file" accept="image/*" multiple class="hidden" />
-          <!-- 修改粘贴区域的样式，添加文本颜色 -->
-          <div id="pasteArea"
-            class="mt-2 border-2 border-dashed border-blue-500 rounded-lg p-6 text-center cursor-pointer hover:bg-blue-50 transition-colors duration-300">
-            <span>点击上传、粘贴或拖拽图片到这里</span>
-          </div>
-          <!-- 添加固定高度的状态容器 -->
-          <div class="file-status-container">
-            <span>未选择图片</span>
-          </div>
-          <!-- 延迟加载的图片预览区域 -->
-          <div id="imagePreviewArea" class="hidden">
-            <!-- 动态加载的图片预览将使用 loading="lazy" -->
-          </div>
+  <div class="w-full px-4 py-8 mt-16" style="max-width: calc(100vw - 2rem);"></div>
+  <div class="w-full">
+    <div class="title-container">
+      <h1 class="text-3xl font-bold mb-2 text-center">
+        <span class="pc-title">简易图片加水印</span>
+      </h1>
+    </div>
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="imageInput">
+          选择图片
+        </label>
+        <input id="imageInput" type="file" accept="image/*" multiple class="hidden" />
+        <!-- 修改粘贴区域的样式，添加文本颜色 -->
+        <div id="pasteArea"
+          class="mt-2 border-2 border-dashed border-blue-500 rounded-lg p-6 text-center cursor-pointer hover:bg-blue-50 transition-colors duration-300">
+          <span>点击上传、粘贴或拖拽图片到这里</span>
         </div>
-        <!-- 文字设置 - 紧凑布局 -->
-        <div class="mb-4 bg-gray-50 rounded-lg p-4">
-          <div class="flex items-center gap-4">
-            <textarea class="form-input compact resize-none flex-1" id="watermarkText" rows="1" maxlength="100"
-              placeholder="输入水印文字，可回车换行" style="min-height: 38px; line-height: 22px;"></textarea>
-            <button id="reuseWatermark"
-              class="text-xs text-gray-500 hover:text-blue-500 flex items-center transition-colors duration-200 whitespace-nowrap">
-              <svg class="w-3 h-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd"
-                  d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-                  clip-rule="evenodd" />
-              </svg>
-              <span>填入上一次：</span>
-              <span id="previousWatermarkText" class="ml-1 truncate max-w-[100px]">测试水印</span>
-            </button>
-          </div>
+        <!-- 添加固定高度的状态容器 -->
+        <div class="file-status-container">
+          <span>未选择图片</span>
         </div>
-        <!-- 水印设置 - 紧凑布局 -->
-        <div class="mb-4 bg-gray-50 rounded-lg p-4">
-          <div class="flex flex-wrap items-end gap-6">
-            <!-- 位置 -->
-            <div class="form-group">
-              <label class="form-label" for="watermarkPosition">位置</label>
-              <select class="form-select compact" id="watermarkPosition">
-                <option value="tile" selected>整体平铺</option>
-                <option value="center">居中</option>
-                <option value="bottomRight">右下角</option>
-                <option value="bottomLeft">左下角</option>
-                <option value="topRight">右上角</option>
-                <option value="topLeft">左上角</option>
-              </select>
-            </div>
-
-            <!-- 密度 -->
-            <div class="form-group">
-              <label class="form-label" for="watermarkDensity">密度</label>
-              <select class="form-select compact wide" id="watermarkDensity">
-                <option value="2" selected>2x2 (4个水印)</option>
-                <option value="3">3x3 (9个水印)</option>
-                <option value="4">4x4 (16个水印)</option>
-                <option value="5">5x5 (25个水印)</option>
-                <option value="6">6x6 (36个水印)</option>
-              </select>
-            </div>
-
-            <!-- 颜色 -->
-            <div class="form-group">
-              <label class="form-label" for="watermarkColor">颜色</label>
-              <div class="relative">
-                <input class="form-input compact color-input" id="watermarkColor" type="text" value="#dedede"
-                  placeholder="#dedede" />
-                <div class="color-preview-btn">
-                  <div id="colorPreview" class="color-preview"></div>
-                </div>
-                <input type="color" id="colorPicker" class="color-picker-hidden" aria-label="选择颜色" />
-              </div>
-            </div>
-
-            <!-- 字号 -->
-            <div class="form-group">
-              <label class="form-label" for="watermarkSize">字号(%)</label>
-              <input class="form-input compact number-input" id="watermarkSize" type="number" min="1" max="50" value="5"
-                step="1" />
-            </div>
-
-            <!-- 透明度 -->
-            <div class="form-group">
-              <label class="form-label" for="watermarkOpacity">透明度(%)</label>
-              <input class="form-input compact number-input" id="watermarkOpacity" type="number" min="0" max="100"
-                value="50" step="1" />
-            </div>
-          </div>
-        
-        </div>
-              <!-- 显示选项 -->
-        <div class="mt-4 flex flex-wrap gap-6">
-          <div class="flex items-center">
-            <input type="checkbox" id="hideSliders" class="mr-2">
-            <label for="hideSliders" class="text-sm text-gray-700">隐藏调节滑块</label>
-          </div>
-          <div class="flex items-center">
-            <input type="checkbox" id="hideButtons" class="mr-2">
-            <label for="hideButtons" class="text-sm text-gray-700">隐藏下载按钮</label>
-          </div>
-        </div>
-        <div class="flex items-center justify-center flex-col">
-          <div class="flex w-full space-x-2 button-container">
-            <button
-              class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline process-button"
-              id="processButton" type="button">
-              处理图片
-            </button>
-            <button
-              class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline reset-button"
-              id="resetButton" type="button">
-              重置
-            </button>
-          </div>
-          <div id="processingLoader" class="processing-loader">
-            <div class="loader"></div>
-            <p class="mt-2">
-              正在处理图片，请稍候...
-            </p>
-          </div>
+        <!-- 延迟加载的图片预览区域 -->
+        <div id="imagePreviewArea" class="hidden">
+          <!-- 动态加载的图片预览将使用 loading="lazy" -->
         </div>
       </div>
-      <!-- 在 previewContainer 上方添加以下代码 -->
-      <div id="resultSection" class="hidden">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-xl font-bold">
-            加水印结果
-          </h3>
-          <button id="downloadAllButton"
-            class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-            一键全部下载
+      <!-- 文字设置 - 紧凑布局 -->
+      <div class="mb-4 bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center gap-4">
+          <textarea class="form-input compact resize-none flex-1" id="watermarkText" rows="1" maxlength="100"
+            placeholder="输入水印文字，可回车换行" style="min-height: 38px; line-height: 22px;"></textarea>
+          <button id="reuseWatermark"
+            class="text-xs text-gray-500 hover:text-blue-500 flex items-center transition-colors duration-200 whitespace-nowrap">
+            <svg class="w-3 h-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd"
+                d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                clip-rule="evenodd" />
+            </svg>
+            <span>填入上一次：</span>
+            <span id="previousWatermarkText" class="ml-1 truncate max-w-[100px]">测试水印</span>
           </button>
         </div>
-        <div id="previewContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+      </div>
+      <!-- 水印设置 - 紧凑布局 -->
+      <div class="mb-4 bg-gray-50 rounded-lg p-4">
+        <div class="flex flex-wrap items-end gap-6">
+          <!-- 位置 -->
+          <div class="form-group">
+            <label class="form-label" for="watermarkPosition">位置</label>
+            <select class="form-select compact" id="watermarkPosition">
+              <option value="tile" selected>整体平铺</option>
+              <option value="center">居中</option>
+              <option value="bottomRight">右下角</option>
+              <option value="bottomLeft">左下角</option>
+              <option value="topRight">右上角</option>
+              <option value="topLeft">左上角</option>
+            </select>
+          </div>
+
+          <!-- 密度 -->
+          <div class="form-group">
+            <label class="form-label" for="watermarkDensity">密度</label>
+            <select class="form-select compact wide" id="watermarkDensity">
+              <option value="2" selected>2x2 (4个水印)</option>
+              <option value="3">3x3 (9个水印)</option>
+              <option value="4">4x4 (16个水印)</option>
+              <option value="5">5x5 (25个水印)</option>
+              <option value="6">6x6 (36个水印)</option>
+            </select>
+          </div>
+
+          <!-- 颜色 -->
+          <div class="form-group">
+            <label class="form-label" for="watermarkColor">颜色</label>
+            <div class="relative">
+              <input class="form-input compact color-input" id="watermarkColor" type="text" value="#dedede"
+                placeholder="#dedede" />
+              <div class="color-preview-btn">
+                <div id="colorPreview" class="color-preview"></div>
+              </div>
+              <input type="color" id="colorPicker" class="color-picker-hidden" aria-label="选择颜色" />
+            </div>
+          </div>
+
+          <!-- 字号 -->
+          <div class="form-group">
+            <label class="form-label" for="watermarkSize">字号(%)</label>
+            <input class="form-input compact number-input" id="watermarkSize" type="number" min="1" max="50" value="5"
+              step="1" />
+          </div>
+
+          <!-- 透明度 -->
+          <div class="form-group">
+            <label class="form-label" for="watermarkOpacity">透明度(%)</label>
+            <input class="form-input compact number-input" id="watermarkOpacity" type="number" min="0" max="100"
+              value="50" step="1" />
+          </div>
+        </div>
+
+      </div>
+      <!-- 显示选项 -->
+      <div class="mt-4 flex flex-wrap gap-6">
+        <div class="flex items-center">
+          <input type="checkbox" id="hideSliders" class="mr-2">
+          <label for="hideSliders" class="text-sm text-gray-700">隐藏调节滑块</label>
+        </div>
+        <div class="flex items-center">
+          <input type="checkbox" id="hideButtons" class="mr-2">
+          <label for="hideButtons" class="text-sm text-gray-700">隐藏下载按钮</label>
+        </div>
+      </div>
+      <div class="flex items-center justify-center flex-col">
+        <div class="flex w-full space-x-2 button-container">
+          <button
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline process-button"
+            id="processButton" type="button">
+            处理图片
+          </button>
+          <button
+            class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline reset-button"
+            id="resetButton" type="button">
+            重置
+          </button>
+        </div>
+        <div id="processingLoader" class="processing-loader">
+          <div class="loader"></div>
+          <p class="mt-2">
+            正在处理图片，请稍候...
+          </p>
+        </div>
       </div>
     </div>
+    <!-- 在 previewContainer 上方添加以下代码 -->
+    <div id="resultSection" class="hidden">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold">
+          加水印结果
+        </h3>
+        <button id="downloadAllButton"
+          class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+          一键全部下载
+        </button>
+      </div>
+      <div id="previewContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+    </div>
+  </div>
   </div>
   <div id="imageModal" class="modal hidden">
     <img id="modalImage" src="" alt="放大预览" class="modal-content" />
