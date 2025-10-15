@@ -4,29 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-i18n="title">
-      简易图片加水印，防盗图必备 - 加水印 JiaShuiYin.com
+      简易图片加水印
     </title>
-    <meta
-      name="description"
-      content="加水印.com 是一款简单易用的在线图片加水印工具。支持批量处理、自定义水印文字、位置、颜色和大小。保护您的图片，防止盗用。完全免费，无需注册。"
-    />
-    <meta name="keywords" content="图片水印,加水印,防盗图,批量处理,在线工具" />
-    <meta name="author" content="PDMaker" />
-    <link rel="canonical" href="https://jiashuiyin.com" />
-    <meta
-      property="og:title"
-      content="简易图片加水印，防盗图必备 - 加水印 JiaShuiYin.com"
-    />
-    <meta
-      property="og:description"
-      content="一款简单易用的在线图片加水印工具。支持批量处理、自定义水印文字、位置、颜色和大小。保护您的图片，防止盗用。完全免费，无需注册。"
-    />
-    <meta property="og:url" content="https://jiashuiyin.com" />
-    <meta property="og:type" content="website" />
-    <meta
-      property="og:image"
-      content="https://jiashuiyin.com/images/logo.jpg"
-    />
     <style>
       /* 关键渲染路径所需的基础样式 */
       body { background-color: #f3f4f6; margin: 0; font-family: system-ui, -apple-system, sans-serif; }
@@ -121,66 +100,9 @@
       sizes="16x16"
       href="/images/favicon-16x16.png"
     />
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "加水印.com",
-        "url": "https://jiashuiyin.com",
-        "description": "简单易用的在线图片加水印工具，支持批量处理和自定义水印。",
-        "applicationCategory": "MultimediaApplication",
-        "operatingSystem": "All",
-        "offers": {
-          "@type": "Offer",
-          "price": "0"
-        }
-      }
-    </script>
-    <script
-      defer
-      data-domain="jiashuiyin.com"
-      src="https://data.tuocibao.com/js/script.js"
-    ></script>
-    <meta name="robots" content="index, follow" />
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4WH6LLGNFX"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "G-4WH6LLGNFX", {
-        'send_page_view': false  // 延迟发送页面浏览
-      });
-    </script>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4562467673017981"
-    crossorigin="anonymous">
-    </script>
-    <!-- 修改 JavaScript 加载 -->
-    <script>
-      // 内联关键的初始化代码
-      window.addEventListener('DOMContentLoaded', function() {
-        const pageLoader = document.getElementById('pageLoader');
-        if (pageLoader) pageLoader.style.display = 'none';
-      });
-    </script>
     <!-- 延迟加载非关键脚本 -->
     <script src="i18n.js" type="module" defer></script>
     <script src="script.js" type="module" defer></script>
-    <!-- 优化 Google Analytics 加载 -->
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-4WH6LLGNFX', {
-        'send_page_view': false,
-        'transport_type': 'beacon'
-      });
-    </script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4WH6LLGNFX"></script>
-    <!-- 异步加载 AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4562467673017981" crossorigin="anonymous"></script>
     <!-- CSS 加载失败的回退方案 -->
     <script>
       // 如果CSS加载失败，使用回退方案
@@ -212,58 +134,10 @@
     <nav class="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
       <div class="container mx-auto px-4 py-3">
         <div class="flex justify-between items-center">
-          <!-- 左侧区域：品牌标识 -->
-          <div class="flex items-center">
-            <a href="/" class="flex items-center cursor-pointer">
-              <img 
-                src="../images/logo.png" 
-                alt="Logo" 
-                class="h-8 w-8 mr-2" 
-                width="32" 
-                height="32"
-                fetchpriority="high"
-              />
-              <!-- 完整品牌名 -->
-              <span class="text-xl font-bold text-gray-800 brand-name-full" data-i18n="logo">
-                加水印.com
-              </span>
-              <!-- 简短品牌名 -->
-              <span class="text-xl font-bold text-gray-800 brand-name-short" data-i18n="logoShort">
-                加水印
-              </span>
-            </a>
-          </div>
 
           <!-- 右侧区域：功能按钮 -->
           <div class="flex items-center space-x-4">
-            <!-- GitHub 链接 -->
-            <a
-              href="https://github.com/pdmaker/watermark-master"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-gray-700 hover:text-blue-500"
-              title="GitHub"
-            >
-              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/>
-              </svg>
-            </a>
-            <!-- 语言选择器 -->
-            <div class="relative">
-              <select
-                id="languageSelector"
-                class="appearance-none bg-white border border-gray-300 rounded px-4 py-2 pr-8 leading-tight focus:outline-none focus:border-blue-500"
-                aria-label="选择语言"
-              >
-                <option value="zh-CN">中文</option>
-                <option value="en">En</option>
-              </select>
-              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
-            </div>
+            
           </div>
         </div>
       </div>
@@ -274,15 +148,11 @@
       <div class="max-w-3xl mx-auto">
         <div class="title-container">
           <h1 class="text-3xl font-bold mb-2 text-center">
-            <span class="pc-title" data-i18n="heading">简易图片加水印，防盗图必备</span>
+            <span class="pc-title" data-i18n="heading">简易图片加水印</span>
             <span class="mobile-title">
               <div class="text-2xl">简易图片加水印</div>
-              <div class="text-2xl mt-2">防盗图必备</div>
             </span>
           </h1>
-          <p class="text-l text-gray-600 mb-6 text-center" data-i18n="subheading">
-            快速为图片添加自定义水印，非常简单
-          </p>
         </div>
         <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
           <div class="mb-4">

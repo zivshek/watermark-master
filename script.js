@@ -14,7 +14,6 @@ const colorPreview = document.getElementById('colorPreview');
 const colorPicker = document.getElementById('colorPicker');
 const imageModal = document.getElementById('imageModal');
 const modalImage = document.getElementById('modalImage');
-const languageSelector = document.getElementById('languageSelector');
 const processingLoader = document.getElementById('processingLoader');
 const imagePreviewArea = document.getElementById('imagePreviewArea');
 const resetButton = document.getElementById('resetButton');
@@ -140,16 +139,9 @@ async function initialize() {
             this.classList.add('hidden');
         });
 
-        languageSelector.addEventListener('change', (e) => {
-            const lang = e.target.value;
-            setLanguage(lang);
-            updateURL(lang);
-        });
-
         const urlParams = new URLSearchParams(window.location.search);
         const lang = urlParams.get('lang') || (window.location.pathname.includes('/en') ? 'en' : 'zh-CN');
         setLanguage(lang);
-        languageSelector.value = lang;
 
         // 修改这部分代码
         const pasteArea = document.getElementById('pasteArea');

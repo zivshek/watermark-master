@@ -2,9 +2,9 @@ let currentLang = 'zh-CN'; // 默认语言
 
 const translations = {
     'zh-CN': {
-        title: '简易图片加水印，防盗图必备',
+        title: '简易图片加水印',
         logo: '加水印.com',
-        heading: '简易图片加水印，防盗图必备',
+        heading: '简易图片加水印',
         subheading: '快速为图片添加自定义水印，非常简单',
         copyright: '@2025 Jiashuiyin.com',
         rights: '保留所有权利；',
@@ -227,12 +227,6 @@ function setLanguage(lang) {
         // 更新元数据
         updateMetadata(lang);
 
-        // 更新语言选择器的值
-        const languageSelector = document.getElementById('languageSelector');
-        if (languageSelector) {
-            languageSelector.value = lang;
-        }
-
         // 移除loading状态
         const pageLoader = document.getElementById('pageLoader');
         if (pageLoader) {
@@ -298,18 +292,6 @@ function initializeLanguage() {
     // 设置初始语言
     currentLang = urlLang;
     document.documentElement.lang = urlLang;
-    
-    // 设置语言选择器
-    const languageSelector = document.getElementById('languageSelector');
-    if (languageSelector) {
-        languageSelector.value = urlLang;
-    }
-
-    // 添加语言切换事件监听
-    languageSelector?.addEventListener('change', (e) => {
-        const newLang = e.target.value;
-        setLanguage(newLang);
-    });
 }
 
 // 在 DOMContentLoaded 时初始化语言
