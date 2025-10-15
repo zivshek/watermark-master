@@ -1,415 +1,442 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title data-i18n="title">
-      简易图片加水印
-    </title>
-    <style>
-      /* 关键渲染路径所需的基础样式 */
-      body { background-color: #f3f4f6; margin: 0; font-family: system-ui, -apple-system, sans-serif; }
-      .container { max-width: 800px; margin: 0 auto; padding: 0 1rem; }
-      .bg-white { background-color: white; }
-      .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-      .fixed { position: fixed; }
-      .top-0 { top: 0; }
-      .left-0 { left: 0; }
-      .right-0 { right: 0; }
-      .z-50 { z-index: 50; }
-      .flex { display: flex; }
-      .items-center { align-items: center; }
-      .justify-between { justify-content: space-between; }
-      .px-4 { padding-left: 1rem; padding-right: 1rem; }
-      .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
-      .text-xl { font-size: 1.25rem; }
-      .font-bold { font-weight: 700; }
-      .text-gray-800 { color: #1f2937; }
-      
-      /* 添加更多首屏关键样式 */
-      .space-x-8 > * + * { margin-left: 2rem; }
-      .cursor-pointer { cursor: pointer; }
-      .h-8 { height: 2rem; }
-      .w-8 { width: 2rem; }
-      .mr-2 { margin-right: 0.5rem; }
-      .text-gray-700 { color: #374151; }
-      .hover\:text-blue-500:hover { color: #3b82f6; }
-      .font-medium { font-weight: 500; }
-      .text-sm { font-size: 0.875rem; }
-      .rounded-lg { border-radius: 0.5rem; }
-      .p-6 { padding: 1.5rem; }
-      .mb-4 { margin-bottom: 1rem; }
-      .mt-2 { margin-top: 0.5rem; }
-      .border-2 { border-width: 2px; }
-      .border-dashed { border-style: dashed; }
-      .border-blue-500 { border-color: #3b82f6; }
-      .text-center { text-align: center; }
-      .transition-colors { transition-property: background-color, border-color, color, fill, stroke; }
-      .duration-300 { transition-duration: 300ms; }
-      
-      /* 添加页面初始化时的隐藏样式 */
-      .page-initializing {
-        opacity: 0;
-        visibility: hidden;
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>简易图片加水印，防盗图必备 - 加水印 JiaShuiYin.com</title>
+  <style>
+    /* 关键渲染路径所需的基础样式 */
+    body {
+      background-color: #f3f4f6;
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    .bg-white {
+      background-color: white;
+    }
+
+    .shadow-md {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .fixed {
+      position: fixed;
+    }
+
+    .top-0 {
+      top: 0;
+    }
+
+    .left-0 {
+      left: 0;
+    }
+
+    .right-0 {
+      right: 0;
+    }
+
+    .z-50 {
+      z-index: 50;
+    }
+
+    .flex {
+      display: flex;
+    }
+
+    .items-center {
+      align-items: center;
+    }
+
+    .justify-between {
+      justify-content: space-between;
+    }
+
+    .px-4 {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+
+    .py-3 {
+      padding-top: 0.75rem;
+      padding-bottom: 0.75rem;
+    }
+
+    .text-xl {
+      font-size: 1.25rem;
+    }
+
+    .font-bold {
+      font-weight: 700;
+    }
+
+    .text-gray-800 {
+      color: #1f2937;
+    }
+
+    /* 添加更多首屏关键样式 */
+    .space-x-8>*+* {
+      margin-left: 2rem;
+    }
+
+    .cursor-pointer {
+      cursor: pointer;
+    }
+
+    .h-8 {
+      height: 2rem;
+    }
+
+    .w-8 {
+      width: 2rem;
+    }
+
+    .mr-2 {
+      margin-right: 0.5rem;
+    }
+
+    .text-gray-700 {
+      color: #374151;
+    }
+
+    .hover\:text-blue-500:hover {
+      color: #3b82f6;
+    }
+
+    .font-medium {
+      font-weight: 500;
+    }
+
+    .text-sm {
+      font-size: 0.875rem;
+    }
+
+    .rounded-lg {
+      border-radius: 0.5rem;
+    }
+
+    .p-6 {
+      padding: 1.5rem;
+    }
+
+    .mb-4 {
+      margin-bottom: 1rem;
+    }
+
+    .mt-2 {
+      margin-top: 0.5rem;
+    }
+
+    .border-2 {
+      border-width: 2px;
+    }
+
+    .border-dashed {
+      border-style: dashed;
+    }
+
+    .border-blue-500 {
+      border-color: #3b82f6;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .transition-colors {
+      transition-property: background-color, border-color, color, fill, stroke;
+    }
+
+    .duration-300 {
+      transition-duration: 300ms;
+    }
+
+    /* 添加页面初始化时的隐藏样式 */
+    .page-initializing {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    /* 添加页面准备完成的样式 */
+    .page-ready {
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.3s ease;
+    }
+
+    /* 确保导航栏在加载时就有正确的样式 */
+    nav.bg-white {
+      width: 100%;
+      background-color: white;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    }
+
+    /* 添加首屏文本样式 */
+    .text-3xl {
+      font-size: 1.875rem;
+      line-height: 2.25rem;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .text-gray-600 {
+      color: #4b5563;
+    }
+
+    .mb-6 {
+      margin-bottom: 1.5rem;
+    }
+  </style>
+  <!-- 异步加载非关键 CSS -->
+  <link rel="preload" href="styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript>
+    <link rel="stylesheet" href="styles.css">
+  </noscript>
+  <link rel="preload" href="/images/logo.png" as="image" />
+  <link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="/images/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png" />
+  <!-- 延迟加载非关键脚本 -->
+  <script src="script.js" type="module" defer></script>
+  <!-- CSS 加载失败的回退方案 -->
+  <script>
+    // 如果CSS加载失败，使用回退方案
+    (function () {
+      var cssMain = document.querySelector('link[href="styles.css"]');
+      if (cssMain) {
+        cssMain.onerror = function () {
+          var link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = 'styles.css';
+          document.head.appendChild(link);
+        };
       }
-      
-      /* 添加页面准备完成的样式 */
-      .page-ready {
-        opacity: 1;
-        visibility: visible;
-        transition: opacity 0.3s ease;
-      }
-      
-      /* 确保导航栏在加载时就有正确的样式 */
-      nav.bg-white {
-        width: 100%;
-        background-color: white;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-      }
-      
-      /* 添加首屏文本样式 */
-      .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
-      .text-center { text-align: center; }
-      .text-gray-600 { color: #4b5563; }
-      .mb-6 { margin-bottom: 1.5rem; }
-    </style>
-    <!-- 异步加载非关键 CSS -->
-    <link rel="preload" href="styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <noscript><link rel="stylesheet" href="styles.css"></noscript>
-    <link rel="preload" href="/images/logo.png" as="image" />
-    <link
-      rel="icon"
-      type="image/x-icon"
-      sizes="16x16 32x32 48x48"
-      href="/images/favicon.ico"
-    />
-    <link
-      rel="apple-touch-icon"
-      sizes="180x180"
-      href="/images/apple-touch-icon.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="/images/favicon-32x32.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="/images/favicon-16x16.png"
-    />
-    <!-- 延迟加载非关键脚本 -->
-    <script src="i18n.js" type="module" defer></script>
-    <script src="script.js" type="module" defer></script>
-    <!-- CSS 加载失败的回退方案 -->
-    <script>
-      // 如果CSS加载失败，使用回退方案
-      (function() {
-        var cssMain = document.querySelector('link[href="styles.css"]');
-        if (cssMain) {
-          cssMain.onerror = function() {
-            var link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = 'styles.css';
-            document.head.appendChild(link);
-          };
-        }
-      })();
-    </script>
-  </head>
-  <body class="bg-gray-100 font-sans page-initializing">
-    <!-- 添加一个初始加载遮罩 -->
-    <div id="initialLoadingMask" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: #f3f4f6; z-index: 9999;"></div>
-    <div id="pageLoader" class="page-loader">
-      <div class="loader-container">
-        <div class="loader"></div>
-        <div class="loader-progress">
-          <div class="progress-bar"></div>
+    })();
+  </script>
+</head>
+
+<body class="bg-gray-100 font-sans page-initializing">
+  <!-- 添加一个初始加载遮罩 -->
+  <div id="initialLoadingMask"
+    style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: #f3f4f6; z-index: 9999;"></div>
+  <div id="pageLoader" class="page-loader">
+    <div class="loader-container">
+      <div class="loader"></div>
+      <div class="loader-progress">
+        <div class="progress-bar"></div>
+      </div>
+      <div class="loader-text">加载中...</div>
+    </div>
+  </div>
+  <nav class="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
+    <div class="container mx-auto px-4 py-3">
+      <div class="flex justify-between items-center">
+
+        <!-- 右侧区域：功能按钮 -->
+        <div class="flex items-center space-x-4">
+
         </div>
-        <div class="loader-text" data-i18n="loading">加载中...</div>
       </div>
     </div>
-    <nav class="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
-      <div class="container mx-auto px-4 py-3">
-        <div class="flex justify-between items-center">
-
-          <!-- 右侧区域：功能按钮 -->
-          <div class="flex items-center space-x-4">
-            
-          </div>
-        </div>
+  </nav>
+  <!-- 添加一个占位 div，防止内容被固定导航栏遮挡 -->
+  <div class="h-16"></div>
+  <div class="container mx-auto px-4 py-8 mt-16">
+    <div class="max-w-3xl mx-auto">
+      <div class="title-container">
+        <h1 class="text-3xl font-bold mb-2 text-center">
+          <span class="pc-title">简易图片加水印</span>
+        </h1>
       </div>
-    </nav>
-    <!-- 添加一个占位 div，防止内容被固定导航栏遮挡 -->
-    <div class="h-16"></div>
-    <div class="container mx-auto px-4 py-8 mt-16">
-      <div class="max-w-3xl mx-auto">
-        <div class="title-container">
-          <h1 class="text-3xl font-bold mb-2 text-center">
-            <span class="pc-title" data-i18n="heading">简易图片加水印</span>
-            <span class="mobile-title">
-              <div class="text-2xl">简易图片加水印</div>
-            </span>
-          </h1>
+      <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2" for="imageInput">
+            选择图片
+          </label>
+          <input id="imageInput" type="file" accept="image/*" multiple class="hidden" />
+          <!-- 修改粘贴区域的样式，添加文本颜色 -->
+          <div id="pasteArea"
+            class="mt-2 border-2 border-dashed border-blue-500 rounded-lg p-6 text-center cursor-pointer hover:bg-blue-50 transition-colors duration-300">
+            <span>点击上传、粘贴或拖拽图片到这里</span>
+          </div>
+          <!-- 添加固定高度的状态容器 -->
+          <div class="file-status-container">
+            <span>未选择图片</span>
+          </div>
+          <!-- 延迟加载的图片预览区域 -->
+          <div id="imagePreviewArea" class="hidden">
+            <!-- 动态加载的图片预览将使用 loading="lazy" -->
+          </div>
         </div>
-        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-          <div class="mb-4">
-            <label
-              class="block text-gray-700 text-sm font-bold mb-2"
-              for="imageInput"
-              data-i18n="selectImages"
-            >
-              选择图片
+        <div class="mb-4">
+          <div class="flex justify-between items-center mb-2">
+            <label class="block text-gray-700 text-sm font-bold" for="watermarkText">
+              文字
             </label>
-            <input
-              id="imageInput"
-              type="file"
-              accept="image/*"
-              multiple
-              class="hidden"
-            />
-            <!-- 修改粘贴区域的样式，添加文本颜色 -->
-            <div
-              id="pasteArea"
-              class="mt-2 border-2 border-dashed border-blue-500 rounded-lg p-6 text-center cursor-pointer hover:bg-blue-50 transition-colors duration-300"
-            >
-              <span data-i18n="pasteAreaText">点击上传、粘贴或拖拽图片到这里</span>
-            </div>
-            <!-- 添加固定高度的状态容器 -->
-            <div class="file-status-container">
-              <span data-i18n="noFileChosen">未选择图片</span>
-            </div>
-            <!-- 延迟加载的图片预览区域 -->
-            <div id="imagePreviewArea" class="hidden">
-              <!-- 动态加载的图片预览将使用 loading="lazy" -->
-            </div>
-          </div>
-          <div class="mb-4">
-            <div class="flex justify-between items-center mb-2">
-              <label
-                class="block text-gray-700 text-sm font-bold"
-                for="watermarkText"
-                data-i18n="watermarkText"
-              >
-                文字
-              </label>
-              <button
-                id="reuseWatermark"
-                class="text-sm text-gray-500 hover:text-blue-500 flex items-center transition-colors duration-200"
-              >
-                <svg class="w-4 h-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
-                </svg>
-                <span data-i18n="reusePrevious">填入上一次：</span>
-                <span id="previousWatermarkText" class="ml-1 truncate max-w-[150px]">测试水印</span>
-              </button>
-            </div>
-            <textarea
-              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-sm focus:outline-none focus:shadow-outline resize-none transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              id="watermarkText"
-              rows="1"
-              maxlength="100"
-              data-i18n-placeholder="inputWatermarkText"
-              placeholder="输入水印文字，可回车换行"
-              style="min-height: 38px; line-height: 22px;"
-            ></textarea>
-          </div>
-          <div class="mb-4 flex flex-wrap -mx-2">
-            <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
-              <label
-                class="block text-gray-700 text-sm font-bold mb-2"
-                for="watermarkPosition"
-                data-i18n="watermarkPosition"
-              >
-                位置
-              </label>
-              <select
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
-                id="watermarkPosition"
-              >
-                <option value="tile" selected data-i18n="watermarkPositionTile">
-                  整体平铺
-                </option>
-                <option value="center" data-i18n="watermarkPositionCenter">
-                  居中
-                </option>
-                <option value="bottomRight" data-i18n="watermarkPositionBottomRight">
-                  右下角
-                </option>
-                <option value="bottomLeft" data-i18n="watermarkPositionBottomLeft">
-                  左下角
-                </option>
-                <option value="topRight" data-i18n="watermarkPositionTopRight">
-                  右上角
-                </option>
-                <option value="topLeft" data-i18n="watermarkPositionTopLeft">
-                  左上角
-                </option>
-              </select>
-            </div>
-            <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
-              <label
-                class="block text-gray-700 text-sm font-bold mb-2"
-                for="watermarkDensity"
-                data-i18n="watermarkDensity"
-              >
-                密度
-              </label>
-              <select
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
-                id="watermarkDensity"
-              >
-                <option value="2" data-i18n="twoByTwo">2x2 (4个水印)</option>
-                <option value="3" selected data-i18n="threeByThree">
-                  3x3 (9个水印)
-                </option>
-                <option value="4" data-i18n="fourByFour">4x4 (16个水印)</option>
-                <option value="5" data-i18n="fiveByFive">5x5 (25个水印)</option>
-                <option value="6" data-i18n="sixBySix">6x6 (36个水印)</option>
-              </select>
-            </div>
-            <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
-              <label
-                class="block text-gray-700 text-sm font-bold mb-2"
-                for="watermarkColor"
-                data-i18n="watermarkColor"
-              >
-                颜色
-              </label>
-              <div class="relative">
-                <input
-                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
-                  id="watermarkColor"
-                  type="text"
-                  value="#dedede"
-                  placeholder="#dedede"
-                />
-                <div
-                  class="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
-                >
-                  <div
-                    id="colorPreview"
-                    class="w-6 h-6 rounded border border-gray-300"
-                  ></div>
-                </div>
-                <input
-                  type="color"
-                  id="colorPicker"
-                  class="absolute opacity-0 -z-10"
-                  aria-label="选择颜色"
-                />
-              </div>
-            </div>
-            <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
-                <label
-                  class="block text-gray-700 text-sm font-bold mb-2"
-                  for="watermarkSize"
-                  data-i18n="watermarkSize"
-                >
-                  字号(%)
-                </label>
-                <div class="relative">
-                  <input
-                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
-                    id="watermarkSize"
-                    type="number"
-                    min="1"
-                    max="50"
-                    value="5"
-                    step="1"
-                  />
-                </div>
-            </div>
-            <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
-              <label
-                class="block text-gray-700 text-sm font-bold mb-2"
-                for="watermarkOpacity"
-                data-i18n="watermarkOpacity"
-              >
-                透明度(%)
-              </label>
-              <div class="relative">
-                <input
-                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
-                  id="watermarkOpacity"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value="80"
-                  step="1"
-                />
-              </div>
-            </div>
-          </div>
-          <div class="flex items-center justify-center flex-col">
-            <div class="flex w-full space-x-2 button-container">
-              <button
-                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline process-button"
-                id="processButton"
-                type="button"
-                data-i18n="processImages"
-              >
-                处理图片
-              </button>
-              <button
-                class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline reset-button"
-                id="resetButton"
-                type="button"
-                data-i18n="resetButton"
-              >
-                重置
-              </button>
-            </div>
-            <div id="processingLoader" class="processing-loader">
-              <div class="loader"></div>
-              <p class="mt-2" data-i18n="processingImages">
-                正在处理图片，请稍候...
-              </p>
-            </div>
-          </div>
-        </div>
-        <!-- 在 previewContainer 上方添加以下代码 -->
-        <div id="resultSection" class="hidden">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold" data-i18n="watermarkResults">
-              加水印结果
-            </h3>
-            <button
-              id="downloadAllButton"
-              class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-              data-i18n="downloadAll"
-            >
-              一键全部下载
+            <button id="reuseWatermark"
+              class="text-sm text-gray-500 hover:text-blue-500 flex items-center transition-colors duration-200">
+              <svg class="w-4 h-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd"
+                  d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                  clip-rule="evenodd" />
+              </svg>
+              <span>填入上一次：</span>
+              <span id="previousWatermarkText" class="ml-1 truncate max-w-[150px]">测试水印</span>
             </button>
           </div>
-          <div id="previewContainer" class="space-y-4"></div>
+          <textarea
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-sm focus:outline-none focus:shadow-outline resize-none transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            id="watermarkText" rows="1" maxlength="100" placeholder="输入水印文字，可回车换行"
+            style="min-height: 38px; line-height: 22px;"></textarea>
+        </div>
+        <div class="mb-4 flex flex-wrap -mx-2">
+          <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="watermarkPosition">
+              位置
+            </label>
+            <select
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
+              id="watermarkPosition">
+              <option value="tile" selected>
+                整体平铺
+              </option>
+              <option value="center">
+                居中
+              </option>
+              <option value="bottomRight">
+                右下角
+              </option>
+              <option value="bottomLeft">
+                左下角
+              </option>
+              <option value="topRight">
+                右上角
+              </option>
+              <option value="topLeft">
+                左上角
+              </option>
+            </select>
+          </div>
+          <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="watermarkDensity">
+              密度
+            </label>
+            <select
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
+              id="watermarkDensity">
+              <option value="2">2x2 (4个水印)</option>
+              <option value="3" selected>
+                3x3 (9个水印)
+              </option>
+              <option value="4">4x4 (16个水印)</option>
+              <option value="5">5x5 (25个水印)</option>
+              <option value="6">6x6 (36个水印)</option>
+            </select>
+          </div>
+          <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="watermarkColor">
+              颜色
+            </label>
+            <div class="relative">
+              <input
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
+                id="watermarkColor" type="text" value="#dedede" placeholder="#dedede" />
+              <div class="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer">
+                <div id="colorPreview" class="w-6 h-6 rounded border border-gray-300"></div>
+              </div>
+              <input type="color" id="colorPicker" class="absolute opacity-0 -z-10" aria-label="选择颜色" />
+            </div>
+          </div>
+          <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="watermarkSize">
+              字号(%)
+            </label>
+            <div class="relative">
+              <input
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
+                id="watermarkSize" type="number" min="1" max="50" value="5" step="1" />
+            </div>
+          </div>
+          <div class="w-full sm:w-1/5 px-2 mb-4 sm:mb-0">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="watermarkOpacity">
+              透明度(%)
+            </label>
+            <div class="relative">
+              <input
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
+                id="watermarkOpacity" type="number" min="0" max="100" value="80" step="1" />
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center justify-center flex-col">
+          <div class="flex w-full space-x-2 button-container">
+            <button
+              class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline process-button"
+              id="processButton" type="button">
+              处理图片
+            </button>
+            <button
+              class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline reset-button"
+              id="resetButton" type="button">
+              重置
+            </button>
+          </div>
+          <div id="processingLoader" class="processing-loader">
+            <div class="loader"></div>
+            <p class="mt-2">
+              正在处理图片，请稍候...
+            </p>
+          </div>
         </div>
       </div>
+      <!-- 在 previewContainer 上方添加以下代码 -->
+      <div id="resultSection" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold">
+            加水印结果
+          </h3>
+          <button id="downloadAllButton"
+            class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+            一键全部下载
+          </button>
+        </div>
+        <div id="previewContainer" class="space-y-4"></div>
+      </div>
     </div>
-    <div id="imageModal" class="modal hidden">
-      <img id="modalImage" src="" alt="放大预览" class="modal-content" />
-    </div>
-  
-    <!-- 修改页面加载脚本 -->
-    <script>
-      // 页面加载优化
-      document.addEventListener('DOMContentLoaded', function() {
-        // 移除初始化类，添加准备完成类
-        document.body.classList.remove('page-initializing');
-        document.body.classList.add('page-ready');
-        
-        // 移除加载遮罩
-        const loadingMask = document.getElementById('initialLoadingMask');
-        if (loadingMask) {
-          loadingMask.style.opacity = '0';
-          loadingMask.style.transition = 'opacity 0.3s ease';
-          setTimeout(() => {
-            loadingMask.remove();
-          }, 300);
-        }
-      });
-    </script>
-  </body>
+  </div>
+  <div id="imageModal" class="modal hidden">
+    <img id="modalImage" src="" alt="放大预览" class="modal-content" />
+  </div>
+
+  <!-- 修改页面加载脚本 -->
+  <script>
+    // 页面加载优化
+    document.addEventListener('DOMContentLoaded', function () {
+      // 移除初始化类，添加准备完成类
+      document.body.classList.remove('page-initializing');
+      document.body.classList.add('page-ready');
+
+      // 移除加载遮罩
+      const loadingMask = document.getElementById('initialLoadingMask');
+      if (loadingMask) {
+        loadingMask.style.opacity = '0';
+        loadingMask.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => {
+          loadingMask.remove();
+        }, 300);
+      }
+    });
+  </script>
+</body>
+
 </html>

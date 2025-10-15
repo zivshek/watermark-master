@@ -1,4 +1,4 @@
-import { translations, setLanguage, updateURL, currentLang } from './i18n.js';
+// Removed i18n imports - using Chinese only
 import JSZip from 'https://jspm.dev/jszip';
 import FileSaver from 'https://jspm.dev/file-saver';
 
@@ -139,9 +139,7 @@ async function initialize() {
             this.classList.add('hidden');
         });
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const lang = urlParams.get('lang') || (window.location.pathname.includes('/en') ? 'en' : 'zh-CN');
-        setLanguage(lang);
+        // Language initialization removed - Chinese only
 
         // 修改这部分代码
         const pasteArea = document.getElementById('pasteArea');
@@ -239,12 +237,12 @@ async function initialize() {
                 // 设置显示文本
                 previousWatermarkText.textContent = displayText;
                 // 设置完整文本作为title属性，鼠标悬停时显示
-                previousWatermarkText.title = `${translations[currentLang].text}: ${settings.text}
-${translations[currentLang].position}: ${settings.position}
-${translations[currentLang].density}: ${settings.density}
-${translations[currentLang].color}: ${settings.color}
-${translations[currentLang].size}: ${settings.size}%
-${translations[currentLang].opacity}: ${settings.opacity}%`;
+                previousWatermarkText.title = `文字: ${settings.text}
+位置: ${settings.position}
+密度: ${settings.density}
+颜色: ${settings.color}
+字号: ${settings.size}%
+透明度: ${settings.opacity}%`;
                 
                 // 添加样式
                 previousWatermarkText.className = 'ml-1 truncate max-w-[150px] inline-block align-middle';
@@ -294,7 +292,7 @@ async function processImages() {
         const text = watermarkText.value;
         if (!text.trim()) {
             watermarkText.classList.add('input-warning');
-            ToastManager.showWarning(translations[currentLang].noWatermarkText || '请输入水印文字', watermarkText);
+            ToastManager.showWarning('请输入水印文字', watermarkText);
             
             // 3秒后移除警告状态
             setTimeout(() => {
@@ -325,7 +323,7 @@ async function processImages() {
         if (uploadedFiles.length === 0) {
             const pasteArea = document.getElementById('pasteArea');
             pasteArea.classList.add('upload-warning');
-            ToastManager.showWarning(translations[currentLang].noImagesSelected, pasteArea);
+            ToastManager.showWarning('请选择至少一张图片', pasteArea);
             
             // 3秒后移除警告状态
             setTimeout(() => {
@@ -394,7 +392,7 @@ function processImage(file, existingFilenames = {}) {
             const opacity = parseInt(document.getElementById('watermarkOpacity').value) / 100;
 
             if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
-                alert(translations[currentLang].invalidColorValue);
+                alert('请输入有效的颜色值，例如 #000000');
                 return;
             }
 
@@ -515,7 +513,7 @@ function processImage(file, existingFilenames = {}) {
             // 水平间距调整
             const hSpacingControl = createSliderControl(
                 `${uniqueId}-horizontal-spacing`,
-                translations[currentLang].horizontalSpacing || '水平间距',
+                '水平间距',
                 -200,
                 200,
                 0,
@@ -526,7 +524,7 @@ function processImage(file, existingFilenames = {}) {
             // 垂直间距调整
             const vSpacingControl = createSliderControl(
                 `${uniqueId}-vertical-spacing`,
-                translations[currentLang].verticalSpacing || '垂直间距',
+                '垂直间距',
                 -200,
                 200,
                 0,
@@ -537,7 +535,7 @@ function processImage(file, existingFilenames = {}) {
             // 水平位置调整
             const hPositionControl = createSliderControl(
                 `${uniqueId}-horizontal-position`,
-                translations[currentLang].horizontalPosition || '水平位置',
+                '水平位置',
                 -300,
                 300,
                 0,
@@ -548,7 +546,7 @@ function processImage(file, existingFilenames = {}) {
             // 垂直位置调整
             const vPositionControl = createSliderControl(
                 `${uniqueId}-vertical-position`,
-                translations[currentLang].verticalPosition || '垂直位置',
+                '垂直位置',
                 -300,
                 300,
                 0,
@@ -564,7 +562,7 @@ function processImage(file, existingFilenames = {}) {
             
             const filenameLabel = document.createElement('label');
             filenameLabel.className = 'block text-gray-700 text-sm font-bold mb-2';
-            filenameLabel.textContent = translations[currentLang].filename || '文件名';
+            filenameLabel.textContent = '文件名';
             filenameContainer.appendChild(filenameLabel);
 
             const filenameInput = document.createElement('input');
@@ -584,7 +582,7 @@ function processImage(file, existingFilenames = {}) {
                 if (file.name && file.name !== 'image.png') {
                     const originalName = file.name.substring(0, file.name.lastIndexOf('.'));
                     const extension = file.name.substring(file.name.lastIndexOf('.'));
-                    const watermarkIdentifier = currentLang === 'en' ? '_watermarked_' : '_已加水印_';
+                    const watermarkIdentifier = '_已加水印_';
                     filenameInput.value = `${originalName}${watermarkIdentifier}${timestamp}${extension}`;
                 } else {
                     filenameInput.value = `image_${timestamp}.png`;
@@ -600,7 +598,7 @@ function processImage(file, existingFilenames = {}) {
             const downloadLink = document.createElement('a');
             downloadLink.href = canvas.toDataURL(file.type || 'image/png');
             downloadLink.className = 'download-button';
-            downloadLink.textContent = translations[currentLang].downloadImage;
+            downloadLink.textContent = '下载图片';
             downloadLink.addEventListener('click', function(e) {
                 let filename = filenameInput.value;
                 if (!filename.match(/\.[^.]+$/)) {
@@ -611,7 +609,7 @@ function processImage(file, existingFilenames = {}) {
             buttonGroup.appendChild(downloadLink);
 
             const copyButton = document.createElement('button');
-            copyButton.textContent = translations[currentLang].copyToClipboard;
+            copyButton.textContent = '复制到剪贴板';
             copyButton.className = 'copy-button';
             copyButton.addEventListener('click', () => copyImageToClipboard(canvas));
             buttonGroup.appendChild(copyButton);
@@ -808,7 +806,7 @@ function initializeFileInput() {
     // 添加清除所有图片按钮
     const clearButton = document.createElement('button');
     clearButton.className = 'ml-2 text-sm text-red-500 hover:text-red-700';
-    clearButton.textContent = translations[currentLang].clearAll || '清除所有';
+    clearButton.textContent = '清除所有';
     clearButton.addEventListener('click', () => {
         uploadedFiles = [];
         updateFileInput();
@@ -852,16 +850,14 @@ function handlePaste(e) {
 
 // 修改 updateFileNameDisplay 函数
 function updateFileNameDisplay() {
-    const fileNameDisplay = document.querySelector('.file-status-container span[data-i18n="noFileChosen"]');
+    const fileNameDisplay = document.querySelector('.file-status-container span');
     
     if (uploadedFiles.length > 0) {
         const fileCount = uploadedFiles.length;
-        const filesSelectedText = fileCount === 1 
-            ? translations[currentLang].fileSelected 
-            : translations[currentLang].filesSelected;
+        const filesSelectedText = '张图片已选择';
         fileNameDisplay.textContent = `${fileCount} ${filesSelectedText}`;
     } else {
-        fileNameDisplay.textContent = translations[currentLang].noFileChosen;
+        fileNameDisplay.textContent = '未选择图片';
     }
 }
 
@@ -944,7 +940,7 @@ async function downloadAllImages() {
     console.log('Download all images triggered');
     
     if (previewContainer.children.length === 0) {
-        alert(translations[currentLang].noImagesToDownload);
+        alert('没有可下载的图片');
         return;
     }
 
@@ -992,7 +988,7 @@ async function downloadAllImages() {
         FileSaver.saveAs(content, zipFilename);
     } catch (error) {
         console.error('下载出错:', error);
-        alert(translations[currentLang].downloadError || '下载出错，请重试');
+        alert('下载出错，请重试');
     }
 }
 
@@ -1012,11 +1008,11 @@ function handleMobileInteraction() {
   const resetButton = document.getElementById('resetButton');
 
   if (isMobile) {
-    processButton.textContent = translations[currentLang].processImagesShort;
-    resetButton.textContent = translations[currentLang].resetButtonShort;
+    processButton.textContent = '处理';
+    resetButton.textContent = '重置';
   } else {
-    processButton.textContent = translations[currentLang].processImages;
-    resetButton.textContent = translations[currentLang].resetButton;
+    processButton.textContent = '处理图片';
+    resetButton.textContent = '重置';
   }
 }
 
@@ -1038,17 +1034,15 @@ function toggleWatermarkDensity() {
 
 function updateWatermarkDensityOptions(singleWatermark) {
     const watermarkDensity = document.getElementById('watermarkDensity');
-    const currentLang = document.documentElement.lang;
-    
     if (singleWatermark) {
-        watermarkDensity.innerHTML = `<option value="1">${translations[currentLang].singleWatermark}</option>`;
+        watermarkDensity.innerHTML = `<option value="1">1个水印</option>`;
     } else {
         watermarkDensity.innerHTML = `
-            <option value="2" data-i18n="twoByTwo">${translations[currentLang].twoByTwo}</option>
-            <option value="3" selected data-i18n="threeByThree">${translations[currentLang].threeByThree}</option>
-            <option value="4" data-i18n="fourByFour">${translations[currentLang].fourByFour}</option>
-            <option value="5" data-i18n="fiveByFive">${translations[currentLang].fiveByFive}</option>
-            <option value="6" data-i18n="sixBySix">${translations[currentLang].sixBySix}</option>
+            <option value="2">2x2 (4个水印)</option>
+            <option value="3" selected>3x3 (9个水印)</option>
+            <option value="4">4x4 (16个水印)</option>
+            <option value="5">5x5 (25个水印)</option>
+            <option value="6">6x6 (36个水印)</option>
         `;
     }
 }
@@ -1079,10 +1073,10 @@ async function copyImageToClipboard(canvas) {
                 'image/png': blob
             })
         ]);
-        showToast(translations[currentLang].imageCopied);
+        showToast('图片已复制到剪贴板');
     } catch (err) {
         console.error('Failed to copy image: ', err);
-        showToast(translations[currentLang].copyFailed);
+        showToast('复制失败，请重试');
     }
 }
 
@@ -1172,7 +1166,7 @@ async function handleDrop(e) {
     }
 
     if (newFiles.length === 0) {
-        ToastManager.showWarning(translations[currentLang].noValidImages || '请拖入图片文件或文件夹', this);
+        ToastManager.showWarning('请拖入图片文件或文件夹', this);
         return;
     }
 
