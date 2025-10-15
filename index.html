@@ -310,6 +310,61 @@
       background-color: #f9fafb;
     }
 
+    /* Container width utilities */
+    .max-w-7xl {
+      max-width: 80rem;
+      /* 1280px */
+    }
+
+    .w-full {
+      width: 100%;
+    }
+
+    .px-6 {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+
+    /* Override preview-item margin for grid layout */
+    #previewContainer .preview-item {
+      margin-bottom: 0 !important;
+    }
+
+    /* Full-width grid container */
+    #previewContainer {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)) !important;
+      gap: 1.5rem !important;
+      width: 100% !important;
+    }
+
+    /* Responsive grid columns for better space usage */
+    @media (min-width: 768px) {
+      #previewContainer {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+    }
+
+    @media (min-width: 1200px) {
+      #previewContainer {
+        grid-template-columns: repeat(3, 1fr) !important;
+      }
+    }
+
+    @media (min-width: 1600px) {
+      #previewContainer {
+        grid-template-columns: repeat(4, 1fr) !important;
+      }
+    }
+
+    /* Make images larger and more visible */
+    #previewContainer .preview-item img {
+      width: 100% !important;
+      height: auto !important;
+      min-height: 250px !important;
+      object-fit: cover !important;
+    }
+
     /* Text area specific styling */
     .form-input.compact.w-full {
       width: 100% !important;
@@ -324,23 +379,39 @@
     .whitespace-nowrap {
       white-space: nowrap;
     }
-    
+
     /* Grid utilities */
-    .grid { display: grid; }
-    .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-    .gap-4 { gap: 1rem; }
-    
+    .grid {
+      display: grid;
+    }
+
+    .grid-cols-1 {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+
+    .gap-4 {
+      gap: 1rem;
+    }
+
     /* Responsive grid */
     @media (min-width: 640px) {
-      .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .sm\:grid-cols-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
+
     @media (min-width: 1024px) {
-      .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .lg\:grid-cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
     }
+
     @media (min-width: 1280px) {
-      .xl\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .xl\:grid-cols-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
     }
-    
+
     /* Improved slider styling */
     .slider-improved {
       -webkit-appearance: none;
@@ -351,7 +422,7 @@
       outline: none;
       transition: background 0.15s ease;
     }
-    
+
     .slider-improved::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
@@ -362,12 +433,12 @@
       cursor: pointer;
       transition: all 0.15s ease;
     }
-    
+
     .slider-improved::-webkit-slider-thumb:hover {
       background: #2563eb;
       transform: scale(1.1);
     }
-    
+
     .slider-improved::-moz-range-thumb {
       width: 18px;
       height: 18px;
@@ -377,7 +448,7 @@
       border: none;
       transition: all 0.15s ease;
     }
-    
+
     .slider-improved::-moz-range-thumb:hover {
       background: #2563eb;
       transform: scale(1.1);
@@ -438,8 +509,8 @@
   </nav>
   <!-- 添加一个占位 div，防止内容被固定导航栏遮挡 -->
   <div class="h-16"></div>
-  <div class="container mx-auto px-4 py-8 mt-16">
-    <div class="max-w-3xl mx-auto">
+  <div class="w-full px-6 py-8 mt-16">
+    <div class="w-full">
       <div class="title-container">
         <h1 class="text-3xl font-bold mb-2 text-center">
           <span class="pc-title">简易图片加水印</span>
@@ -519,7 +590,7 @@
                 <div class="color-preview-btn">
                   <div id="colorPreview" class="color-preview"></div>
                 </div>
-                <input type="color" id="colorPicker" class="color-picker" aria-label="选择颜色" />
+                <input type="color" id="colorPicker" class="color-picker-hidden" aria-label="选择颜色" />
               </div>
             </div>
 
