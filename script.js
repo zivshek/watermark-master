@@ -431,6 +431,9 @@ processButton.addEventListener('click', processImages);
 // 初始化显示选项复选框
 initializeDisplayOptions();
 
+// 添加实时预览更新
+initializeRealTimePreview();
+
 function processImage(file, existingFilenames = {}) {
     console.log('Processing image:', file.name);
     const reader = new FileReader();
@@ -557,6 +560,10 @@ function processImage(file, existingFilenames = {}) {
             const previewItem = document.createElement('div');
             previewItem.className = 'preview-item bg-white p-4 rounded-lg shadow';
 
+            // 存储原始图片和画布，用于实时预览更新
+            previewItem.originalImage = img;
+            previewItem.canvas = canvas;
+
             const previewImg = document.createElement('img');
             previewImg.src = canvas.toDataURL();
             previewImg.className = 'preview-image w-full h-auto mb-4 cursor-pointer';
@@ -624,9 +631,8 @@ function processImage(file, existingFilenames = {}) {
             let autoFilename;
             if (file.name && file.name !== 'image.png') {
                 const originalName = file.name.substring(0, file.name.lastIndexOf('.'));
-                const extension = file.name.substring(file.name.lastIndexOf('.'));
                 const watermarkIdentifier = '_已加水印_';
-                autoFilename = `${originalName}${watermarkIdentifier}${timestamp}${extension}`;
+                autoFilename = `${originalName}${watermarkIdentifier}${timestamp}.png`;
             } else {
                 autoFilename = `image_${timestamp}.png`;
             }
@@ -1435,3 +1441,224 @@ function testProgressBar() {
 
 // You can call testProgressBar() in the console to test
 window.testProgressBar = testProgressBar;
+// 初始化实时预览更新
+function initializeRealTimePreview() {
+    const watermarkControls = [
+        'watermarkSize',
+        'watermarkOpacity',
+        'watermarkColor',
+        'watermarkPosition',
+        'watermarkDensity'
+    ];
+
+    // 防抖函数，避免频繁更新
+    let updateTimeout;
+    const debouncedUpdate = () => {
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+            updateAllPreviews();
+        }, 300); // 300ms 延迟
+    };
+
+    // 为所有水印控件添加事件监听器
+    watermarkControls.forEach(controlId => {
+        const control = document.getElementById(controlId);
+        if (control) {
+            control.addEventListener('input', debouncedUpdate);
+            control.addEventListener('change', debouncedUpdate);
+        }
+    });
+
+    // 也监听文字输入
+    const watermarkTextElement = document.getElementById('watermarkText');
+    if (watermarkTextElement) {
+        watermarkTextElement.addEventListener('input', debouncedUpdate);
+    }
+}
+
+// 更新所有预览图片
+async function updateAllPreviews() {
+    const previewItems = document.querySelectorAll('.preview-item');
+
+    if (previewItems.length === 0) {
+        return; // 没有预览项，不需要更新
+    }
+
+    console.log(`Updating ${previewItems.length} previews...`);
+
+    // 显示更新指示器
+    showUpdateIndicator();
+
+    try {
+        // 获取当前水印设置
+        const text = watermarkText.value;
+        if (!text.trim()) {
+            hideUpdateIndicator();
+            return; // 没有水印文字，不更新
+        }
+
+        const position = watermarkPosition.value;
+        const density = parseInt(watermarkDensity.value);
+        const color = watermarkColor.value;
+        const size = parseInt(watermarkSize.value);
+        const opacity = parseInt(watermarkOpacity.value) / 100;
+
+        // 更新每个预览项
+        for (const previewItem of previewItems) {
+            const canvas = previewItem.canvas; // 使用存储的canvas
+            const img = previewItem.querySelector('img');
+            const originalImg = previewItem.originalImage;
+
+            console.log('Preview item debug:', {
+                hasCanvas: !!canvas,
+                hasImg: !!img,
+                hasOriginalImg: !!originalImg,
+                canvasSize: canvas ? `${canvas.width}x${canvas.height}` : 'none'
+            });
+
+            if (canvas && originalImg && img) {
+                // 重新绘制水印
+                await redrawWatermark(canvas, originalImg, {
+                    text, position, density, color, size, opacity
+                });
+
+                // 更新预览图片
+                img.src = canvas.toDataURL();
+                console.log('Updated preview image');
+            } else {
+                console.log('Missing elements for preview update');
+            }
+        }
+
+    } catch (error) {
+        console.error('更新预览时出错:', error);
+    } finally {
+        hideUpdateIndicator();
+    }
+}
+
+// 重新绘制水印
+async function redrawWatermark(canvas, originalImg, settings) {
+    const ctx = canvas.getContext('2d');
+
+    // 清除画布并重新绘制原图
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(originalImg, 0, 0);
+
+    const { text, position, density, color, size, opacity } = settings;
+
+    // 设置水印样式
+    const smallerDimension = Math.min(canvas.width, canvas.height);
+    const fontSize = Math.round((size / 100) * smallerDimension);
+
+    ctx.fillStyle = `rgba(${parseInt(color.slice(1, 3), 16)}, ${parseInt(color.slice(3, 5), 16)}, ${parseInt(color.slice(5, 7), 16)}, ${opacity})`;
+    ctx.font = `${fontSize}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const lines = text.split('\n');
+    const lineHeight = fontSize * 1.2;
+
+    if (position === 'tile') {
+        // 平铺水印
+        const angle = -Math.PI / 4;
+        const cellWidth = canvas.width / density;
+        const cellHeight = canvas.height / density;
+
+        for (let i = 0; i < density; i++) {
+            for (let j = 0; j < density; j++) {
+                const x = (i + 0.5) * cellWidth;
+                const y = (j + 0.5) * cellHeight;
+
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+
+                if (lines.length === 1) {
+                    ctx.fillText(text, 0, 0);
+                } else {
+                    lines.forEach((line, index) => {
+                        const yOffset = (index - (lines.length - 1) / 2) * lineHeight;
+                        ctx.fillText(line, 0, yOffset);
+                    });
+                }
+
+                ctx.restore();
+            }
+        }
+    } else {
+        // 单个位置水印
+        const padding = 15;
+        let x, y;
+
+        switch (position) {
+            case 'bottomRight':
+                x = canvas.width - padding;
+                y = canvas.height - padding;
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'bottom';
+                break;
+            case 'bottomLeft':
+                x = padding;
+                y = canvas.height - padding;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'bottom';
+                break;
+            case 'topRight':
+                x = canvas.width - padding;
+                y = padding;
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'top';
+                break;
+            case 'topLeft':
+                x = padding;
+                y = padding;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                break;
+            case 'center':
+                x = canvas.width / 2;
+                y = canvas.height / 2;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                break;
+        }
+
+        if (lines.length === 1) {
+            ctx.fillText(text, x, y);
+        } else {
+            lines.forEach((line, index) => {
+                const yOffset = (index - (lines.length - 1) / 2) * lineHeight;
+                ctx.fillText(line, x, y + yOffset);
+            });
+        }
+    }
+}
+
+// 显示更新指示器
+function showUpdateIndicator() {
+    let indicator = document.getElementById('updateIndicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'updateIndicator';
+        indicator.innerHTML = `
+            <div style="position: fixed; top: 20px; right: 20px; background: rgba(59, 130, 246, 0.9); color: white; padding: 8px 16px; border-radius: 6px; font-size: 14px; z-index: 1000; display: flex; align-items: center;">
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                更新预览中...
+            </div>
+        `;
+        document.body.appendChild(indicator);
+    }
+    indicator.style.display = 'block';
+}
+
+// 隐藏更新指示器
+function hideUpdateIndicator() {
+    const indicator = document.getElementById('updateIndicator');
+    if (indicator) {
+        indicator.style.display = 'none';
+    }
+}
