@@ -878,48 +878,44 @@ function updateImagePreview() {
     imagePreviewArea.innerHTML = ''; // 清空现有预览
     imagePreviewArea.classList.remove('hidden');
 
+    // 显示所有已上传图片的缩略预览（不再限制为30）
     uploadedFiles.forEach((file, index) => {
-        if (index < 30) { // 限制最多显示30个预览
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const previewWrapper = document.createElement('div');
-                previewWrapper.className = 'relative group';
-                
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.className = 'w-16 h-16 object-cover rounded';
-                img.loading = 'lazy'; // 添加延迟加载
-                img.width = 64;  // 添加明确的尺寸
-                img.height = 64;
-                previewWrapper.appendChild(img);
-                
-                // 添加删除按钮
-                const deleteButton = document.createElement('button');
-                deleteButton.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity';
-                deleteButton.innerHTML = '×';
-                deleteButton.onclick = (e) => {
-                    e.stopPropagation();
-                    uploadedFiles.splice(index, 1);
-                    updateFileInput();
-                    updateFileNameDisplay();
-                    updateImagePreview();
-                };
-                previewWrapper.appendChild(deleteButton);
-                
-                imagePreviewArea.appendChild(previewWrapper);
-            }
-            reader.readAsDataURL(file);
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const previewWrapper = document.createElement('div');
+            previewWrapper.className = 'relative group';
+            
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.className = 'w-16 h-16 object-cover rounded';
+            img.loading = 'lazy'; // 添加延迟加载
+            img.width = 64;  // 添加明确的尺寸
+            img.height = 64;
+            previewWrapper.appendChild(img);
+            
+            // 添加删除按钮
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity';
+            deleteButton.innerHTML = '×';
+            deleteButton.onclick = (e) => {
+                e.stopPropagation();
+                // 使用最新的 uploadedFiles 索引查找并移除对应文件（避免闭包索引失效）
+                const idx = Array.from(imagePreviewArea.querySelectorAll('.relative.group')).indexOf(previewWrapper);
+                if (idx !== -1) {
+                    uploadedFiles.splice(idx, 1);
+                }
+                updateFileInput();
+                updateFileNameDisplay();
+                updateImagePreview();
+            };
+            previewWrapper.appendChild(deleteButton);
+            
+            imagePreviewArea.appendChild(previewWrapper);
         }
+        reader.readAsDataURL(file);
     });
 
-    // 优化提示信息显示
-    if (uploadedFiles.length > 30) {
-        const message = document.createElement('p');
-        message.textContent = translations[currentLang].maxImagesMessage || 
-            `只显示前30张图片预览，共${uploadedFiles.length}张图片已上传`;
-        message.className = 'text-sm text-gray-500 mt-2';
-        imagePreviewArea.appendChild(message);
-    }
+    // 不再显示关于 "前30张" 的提示，预览区域会展示所有已上传图片
 }
 
 // 添加重置函数
@@ -1188,23 +1184,8 @@ async function handleDrop(e) {
         return;
     }
 
-    // 限制文件数量
-    const remainingSlots = 30 - uploadedFiles.length;
-    if (remainingSlots <= 0) {
-        ToastManager.showWarning(translations[currentLang].maxImagesReached || '最多只能上传30张图片', this);
-        return;
-    }
-
-    const filesToAdd = newFiles.slice(0, remainingSlots);
-    uploadedFiles = uploadedFiles.concat(filesToAdd);
-    
-    if (newFiles.length > remainingSlots) {
-        ToastManager.showWarning(
-            translations[currentLang].someImagesIgnored || 
-            `已添加 ${filesToAdd.length} 张图片，${newFiles.length - filesToAdd.length} 张因超出限制而忽略`,
-            this
-        );
-    }
+    // 不再限制总上传数量：将所有找到的图片加入 uploadedFiles
+    uploadedFiles = uploadedFiles.concat(newFiles);
 
     updateFileNameDisplay();
     updateImagePreview();

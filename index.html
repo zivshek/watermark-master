@@ -291,7 +291,7 @@
               for="imageInput"
               data-i18n="selectImages"
             >
-              选择图片（最多30张）
+              选择图片
             </label>
             <input
               id="imageInput"
@@ -516,172 +516,12 @@
           </div>
           <div id="previewContainer" class="space-y-4"></div>
         </div>
-        <!-- How to Use Section -->
-        <div class="mt-12">
-          <h2 class="text-2xl font-bold mb-4" data-i18n="howToUse">
-            如何高效加水印？
-          </h2>
-          <!-- Quick Steps -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white rounded-lg shadow-md p-6">
-              <div class="text-xl font-bold mb-2" data-i18n="quickStep1">上传图片</div>
-              <p class="text-gray-600" data-i18n="quickStep1Detail">多选或直接粘贴</p>
-            </div>
-            <div class="bg-white rounded-lg shadow-md p-6">
-              <div class="text-xl font-bold mb-2" data-i18n="quickStep2">输入水印</div>
-              <p class="text-gray-600" data-i18n="quickStep2Detail">自定义水印文字</p>
-            </div>
-            <div class="bg-white rounded-lg shadow-md p-6">
-              <div class="text-xl font-bold mb-2" data-i18n="quickStep3">一键处理</div>
-              <p class="text-gray-600" data-i18n="quickStep3Detail">导出带水印图片</p>
-            </div>
-          </div>
-          <!-- Detailed Steps -->
-          <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-xl font-bold mb-4" data-i18n="detailedSteps">详细步骤</h3>
-            <ol class="list-decimal list-inside space-y-2 text-gray-700">
-              <li data-i18n="step1">选择或粘贴图片（支持最多30张图片同时处理）</li>
-              <li data-i18n="step2">输入想要添加的水印文字</li>
-              <li data-i18n="step3">选择水印位置（整体平铺或四个角落之一）</li>
-              <li data-i18n="step4">调整水印密度（仅平铺模式）、颜色和大小</li>
-              <li data-i18n="step5">点击"处理图片"按钮生成水印</li>
-              <li data-i18n="step6">预览效果，可以直接下载或复制到剪贴板</li>
-              <li data-i18n="step7">使用"一键全部下载"批量保存所有处理后的图片</li>
-            </ol>
-          </div>
-        </div>
-
-        <!-- FAQ Section -->
-        <div class="mt-12">
-          <h2 class="text-2xl font-bold mb-4" data-i18n="qaTitle">常见问题解答</h2>
-          <div class="space-y-4">
-            <div class="bg-white rounded-lg shadow-md p-6">
-              <h3 class="text-xl font-bold mb-2" data-i18n="qa1Title">
-                为什么选择「加水印」网站？
-              </h3>
-              <p class="text-gray-700" data-i18n="qa1Answer">
-                产品简单易用，批量处理更高效，用户体验优良。完全在本地浏览器运行，无需上传文件到服务器，确保用户隐私安全。支持多种水印样式和位置，满足不同场景需求。
-              </p>
-            </div>
-            <div class="bg-white rounded-lg shadow-md p-6">
-              <h3 class="text-xl font-bold mb-2" data-i18n="qa2Title">
-                为什么说「加水印」网站可以保护使用者隐私？
-              </h3>
-              <p class="text-gray-700" data-i18n="qa2Answer">
-                所有图片处理都在用户本地浏览器中完成，不会上传到任何服务器。源文件和处理后的文件都只存在于用户设备中，确保敏感信息的安全性。同时，网站完全免费，无需注册账号，不收集任何用户信息。
-              </p>
-            </div>  
-            <div class="bg-white rounded-lg shadow-md p-6">
-              <h3 class="text-xl font-bold mb-2" data-i18n="qa3Title">
-                「加水印」有什么典型的用户场景？
-              </h3>
-              <p class="text-gray-700" data-i18n="qa3Answer">
-                主要应用场景包括：1) 私域运营的素材保护，适合电商品牌运营人员和微商从业者；2) 敏感文件保护，如身份证、营业执照等证件的水印添加；3) 摄影作品版权保护；4) 产品图片、宣传材料的品牌 Logo 添加。
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
     <div id="imageModal" class="modal hidden">
       <img id="modalImage" src="" alt="放大预览" class="modal-content" />
     </div>
-    <!-- Footer -->
-    <footer class="bg-white mt-12 py-8 border-t border-gray-200">
-      <div class="container mx-auto px-4">
-        <!-- 主要内容区 -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          <!-- 品牌信息 -->
-          <div class="text-center md:text-left">
-            <div class="flex items-center justify-center md:justify-start mb-3">
-              <img src="../images/logo.png" alt="Logo" class="h-8 w-8 mr-2" />
-              <span class="text-xl font-bold text-gray-800" data-i18n="logo">加水印.com</span>
-            </div>
-            <p class="text-sm text-gray-600">
-              <span data-i18n="copyright">@2025 Jiashuiyin.com</span>
-              <span data-i18n="rights">保留所有权利</span>
-            </p>
-          </div>
-          
-          <!-- 快速链接 -->
-          <div class="text-center md:text-left">
-            <h4 class="text-sm font-semibold text-gray-700 mb-3">快速链接</h4>
-            <ul class="space-y-2">
-              <li>
-                <a href="/blog/zh/index.html" class="text-sm text-gray-600 hover:text-blue-600">博客</a>
-              </li>
-              <li>
-                <a href="/changelog.html" class="text-sm text-gray-600 hover:text-blue-600">更新日志</a>
-              </li>
-            </ul>
-          </div>
-
-          <!-- 法律条款 -->
-          <div class="text-center md:text-left">
-            <h4 class="text-sm font-semibold text-gray-700 mb-3">法律条款</h4>
-            <ul class="space-y-2">
-              <li>
-                <a href="/legal/zh/privacy.html" class="text-sm text-gray-600 hover:text-blue-600" data-i18n="privacyPolicy">隐私政策</a>
-              </li>
-              <li>
-                <a href="/legal/zh/terms.html" class="text-sm text-gray-600 hover:text-blue-600" data-i18n="termsConditions">使用条款</a>
-              </li>
-            </ul>
-          </div>
-
-          <!-- 联系方式 -->
-          <div class="text-center md:text-left">
-            <h4 class="text-sm font-semibold text-gray-700 mb-3">联系我们</h4>
-            <!-- 社交媒体图标 -->
-            <div class="flex items-center justify-center md:justify-start space-x-4">
-              <!-- Email 图标 -->
-              <a href="mailto:hi@jiashuiyin.com" 
-                 class="text-gray-400 hover:text-gray-600"
-                 title="发送邮件">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-                </svg>
-              </a>
-              <!-- GitHub 图标 -->
-              <a href="https://github.com/pdmaker/watermark-master" 
-                 target="_blank" 
-                 rel="noopener noreferrer"
-                 class="text-gray-400 hover:text-gray-600"
-                 title="GitHub">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/>
-                </svg>
-              </a>
-              <!-- Twitter 图标 -->
-              <a href="https://x.com/pdmake" 
-                 target="_blank" 
-                 rel="noopener noreferrer"
-                 class="text-gray-400 hover:text-gray-600"
-                 title="Twitter">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                </svg>
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <!-- 分隔线 -->
-        <div class="border-t border-gray-200 my-6"></div>
-
-        <!-- 友情链接 -->
-        <div class="text-center">
-          <h4 class="text-sm font-semibold text-gray-700 mb-3" data-i18n="friendlyLinks">友情链接</h4>
-          <div class="flex flex-wrap justify-center gap-4">
-            <a href="https://refhide.com/" class="text-sm text-gray-600 hover:text-blue-600" target="_blank" rel="noopener noreferrer" data-i18n="RefHide">隐私网址生成器</a>
-            <a href="https://daojishi.fun" class="text-sm text-gray-600 hover:text-blue-600" target="_blank" rel="noopener noreferrer" data-i18n="retirementCountdown">退休倒计时</a>
-            <a href="https://keyboardcounter.top/" class="text-sm text-gray-600 hover:text-blue-600" target="_blank" rel="noopener noreferrer" data-i18n="keyboardCounter">键盘计数器</a>
-            <a href="https://iframegenerator.app/" class="text-sm text-gray-600 hover:text-blue-600" target="_blank" rel="noopener noreferrer" data-i18n="iframeGenerator">网页iframe生成器</a>
-            <a href="https://openurls.net/" class="text-sm text-gray-600 hover:text-blue-600" target="_blank" rel="noopener noreferrer" data-i18n="openUrlsBatch">批量打开网址</a>
-          </div>
-        </div>
-      </div>
-    </footer>
+  
     <!-- 修改页面加载脚本 -->
     <script>
       // 页面加载优化
